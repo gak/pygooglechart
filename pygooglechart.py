@@ -250,7 +250,7 @@ class Chart(object):
 
     # Downloading
     # -------------------------------------------------------------------------
-    def download_graph(self, file_name):
+    def download(self, file_name):
         open(file_name, 'wb').write(urllib.urlopen(self.get_url()).read())
 
     # Simple settings
@@ -599,7 +599,14 @@ def test():
 
     chart.add_fill_simple('303030A0')
 
-    chart.download_graph('test.png')
+
+    chart = SimpleLineChart(320, 200)
+    data = [ 1, 5, 30, 10, 25 ]
+    chart.add_data(data)
+    chart.set_title('Hello World!')
+    chart.set_axis_range(Axis.LEFT, 0, 10)
+    print chart.get_url()
+    chart.download('hello.png')
 
     url = chart.get_url()
     print url
