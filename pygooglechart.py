@@ -1,5 +1,5 @@
 """
-PyGoogleChart - A Python wrapper for the Google Chart API
+PyGoogleChart - A complete Python wrapper for the Google Chart API
 
 http://pygooglechart.slowchop.com/
 
