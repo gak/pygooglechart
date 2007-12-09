@@ -1,3 +1,25 @@
+"""
+PyGoogleChart - A complete Python wrapper for the Google Chart API
+
+http://pygooglechart.slowchop.com/
+
+Copyright 2007 Gerald Kaszuba
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+"""
+
 import os
 import urllib
 import math
@@ -226,6 +248,11 @@ class Chart(object):
             url_bits.append(self.markers_to_url())
         return url_bits
 
+    # Downloading
+    # -------------------------------------------------------------------------
+    def download_graph(self, file_name):
+        open(file_name, 'wb').write(urllib.urlopen(self.get_url()).read())
+
     # Simple settings
     # -------------------------------------------------------------------------
 
@@ -391,7 +418,6 @@ class Chart(object):
     # -------------------------------------------------------------------------
 
     def markers_to_url(self):
-        print 'chm=%s' % '|'.join([ ','.join(a) for a in self.markers ])
         return 'chm=%s' % '|'.join([ ','.join(a) for a in self.markers ])
 
     def add_marker(self, index, point, marker_type, colour, size):
@@ -572,6 +598,8 @@ def test():
     chart.add_vertical_range('00c030', .2, .4)
 
     chart.add_fill_simple('303030A0')
+
+    chart.download_graph('test.png')
 
     url = chart.get_url()
     print url
