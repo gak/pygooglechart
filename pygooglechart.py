@@ -22,6 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
 import urllib
+import urllib2
 import math
 import random
 import re
@@ -30,6 +31,7 @@ import re
 # -----------------------------------------------------------------------------
 
 reo_colour = re.compile('^([A-Fa-f0-9]{2,2}){3,4}$')
+
 
 def _check_colour(colour):
     if not reo_colour.match(colour):
@@ -40,31 +42,45 @@ def _check_colour(colour):
 # Exception Classes
 # -----------------------------------------------------------------------------
 
+
 class PyGoogleChartException(Exception):
     pass
+
 
 class DataOutOfRangeException(PyGoogleChartException):
     pass
 
+
 class UnknownDataTypeException(PyGoogleChartException):
     pass
+
 
 class NoDataGivenException(PyGoogleChartException):
     pass
 
+
 class InvalidParametersException(PyGoogleChartException):
     pass
+
+
+class BadContentTypeException(PyGoogleChartException):
+    pass
+
 
 # Data Classes
 # -----------------------------------------------------------------------------
 
+
 class Data(object):
+
     def __init__(self, data):
         assert(type(self) != Data)  # This is an abstract class
         self.data = data
 
+
 class SimpleData(Data):
     enc_map = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+
     def __repr__(self):
         encoded_data = []
         for data in self.data:
@@ -78,11 +94,14 @@ class SimpleData(Data):
                     raise DataOutOfRangeException()
             encoded_data.append(''.join(sub_data))
         return 'chd=s:' + ','.join(encoded_data)
+
     @staticmethod
     def max_value():
         return 61
 
+
 class TextData(Data):
+
     def __repr__(self):
         encoded_data = []
         for data in self.data:
@@ -96,13 +115,16 @@ class TextData(Data):
                     raise DataOutOfRangeException()
             encoded_data.append(','.join(sub_data))
         return 'chd=t:' + '|'.join(encoded_data)
+
     @staticmethod
     def max_value():
         return 100
 
+
 class ExtendedData(Data):
     enc_map = \
         'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-.'
+
     def __repr__(self):
         encoded_data = []
         enc_size = len(ExtendedData.enc_map)
@@ -122,6 +144,7 @@ class ExtendedData(Data):
                         value))
             encoded_data.append(''.join(sub_data))
         return 'chd=e:' + ','.join(encoded_data)
+
     @staticmethod
     def max_value():
         return 4095
@@ -129,27 +152,33 @@ class ExtendedData(Data):
 # Axis Classes
 # -----------------------------------------------------------------------------
 
+
 class Axis(object):
     BOTTOM = 'x'
     TOP = 't'
     LEFT = 'y'
     RIGHT = 'r'
     TYPES = (BOTTOM, TOP, LEFT, RIGHT)
+
     def __init__(self, axis, **kw):
         assert(axis in Axis.TYPES)
         self.has_style = False
         self.index = None
         self.positions = None
+
     def set_index(self, index):
         self.index = index
+
     def set_positions(self, positions):
         self.positions = positions
+
     def set_style(self, colour, font_size=None, alignment=None):
         _check_colour(colour)
         self.colour = colour
         self.font_size = font_size
         self.alignment = alignment
         self.has_style = True
+
     def style_to_url(self):
         bits = []
         bits.append(str(self.index))
@@ -159,31 +188,44 @@ class Axis(object):
             if self.alignment is not None:
                 bits.append(str(self.alignment))
         return ','.join(bits)
+
     def positions_to_url(self):
         bits = []
         bits.append(str(self.index))
-        bits += [ str(a) for a in self.positions ]
+        bits += [str(a) for a in self.positions]
         return ','.join(bits)
 
+
 class LabelAxis(Axis):
+
     def __init__(self, axis, values, **kwargs):
         Axis.__init__(self, axis, **kwargs)
-        self.values = [ str(a) for a in values ]
+        self.values = [str(a) for a in values]
+
     def __repr__(self):
         return '%i:|%s' % (self.index, '|'.join(self.values))
 
+
 class RangeAxis(Axis):
+
     def __init__(self, axis, low, high, **kwargs):
         Axis.__init__(self, axis, **kwargs)
         self.low = low
         self.high = high
+
     def __repr__(self):
         return '%i,%s,%s' % (self.index, self.low, self.high)
 
 # Chart Classes
 # -----------------------------------------------------------------------------
 
+
 class Chart(object):
+    """Abstract class for all chart types.
+
+    width are height specify the dimensions of the image. title sets the title
+    of the chart. legend requires a list that corresponds to datasets.
+    """
 
     BASE_URL = 'http://chart.apis.google.com/chart?'
     BACKGROUND = 'bg'
@@ -250,7 +292,14 @@ class Chart(object):
 
     # Downloading
     # -------------------------------------------------------------------------
+
     def download(self, file_name):
+        opener = urllib2.urlopen(self.get_url())
+
+        if opener.headers['content-type'] != 'image/png':
+            raise BadContentTypeException('Server responded with a ' \
+                'content-type of %s' % opener.headers['content-type'])
+
         open(file_name, 'wb').write(urllib.urlopen(self.get_url()).read())
 
     # Simple settings
@@ -267,7 +316,7 @@ class Chart(object):
         assert(isinstance(legend, list) or isinstance(legend, tuple) or
             legend is None)
         if legend:
-            self.legend = [ urllib.quote(a) for a in legend ]
+            self.legend = [urllib.quote(a) for a in legend]
         else:
             self.legend = None
 
@@ -348,6 +397,7 @@ class Chart(object):
 
     def add_data(self, data):
         self.data.append(data)
+        return len(self.data) - 1  # return the "index" of the data set
 
     def data_to_url(self, data_class=None):
         if not data_class:
@@ -418,7 +468,7 @@ class Chart(object):
     # -------------------------------------------------------------------------
 
     def markers_to_url(self):
-        return 'chm=%s' % '|'.join([ ','.join(a) for a in self.markers ])
+        return 'chm=%s' % '|'.join([','.join(a) for a in self.markers])
 
     def add_marker(self, index, point, marker_type, colour, size):
         self.markers.append((marker_type, colour, str(index), str(point), \
@@ -437,18 +487,24 @@ class Chart(object):
     def add_fill_simple(self, colour):
         self.markers.append(('B', colour, '1', '1', '1'))
 
+
 class ScatterChart(Chart):
+
     def __init__(self, *args, **kwargs):
         Chart.__init__(self, *args, **kwargs)
+
     def type_to_url(self):
         return 'cht=s'
 
 
 class LineChart(Chart):
+
     def __init__(self, *args, **kwargs):
+        assert(type(self) != LineChart)  # This is an abstract class
         Chart.__init__(self, *args, **kwargs)
         self.line_styles = {}
         self.grid = None
+
     def set_line_style(self, index, thickness=1, line_segment=None, \
             blank_segment=None):
         value = []
@@ -457,10 +513,12 @@ class LineChart(Chart):
             value.append(str(line_segment))
             value.append(str(blank_segment))
         self.line_styles[index] = value
+
     def set_grid(self, x_step, y_step, line_segment=1, \
             blank_segment=0):
         self.grid = '%s,%s,%s,%s' % (x_step, y_step, line_segment, \
             blank_segment)
+
     def get_url_bits(self):
         url_bits = Chart.get_url_bits(self)
         if self.line_styles:
@@ -477,41 +535,57 @@ class LineChart(Chart):
             url_bits.append('chg=%s' % self.grid)
         return url_bits
 
+
 class SimpleLineChart(LineChart):
+
     def type_to_url(self):
         return 'cht=lc'
 
+
 class XYLineChart(LineChart):
+
     def type_to_url(self):
         return 'cht=lxy'
 
+
 class BarChart(Chart):
+
     def __init__(self, *args, **kwargs):
         assert(type(self) != BarChart)  # This is an abstract class
         Chart.__init__(self, *args, **kwargs)
         self.bar_width = None
+
     def set_bar_width(self, bar_width):
         self.bar_width = bar_width
+
     def get_url_bits(self):
         url_bits = Chart.get_url_bits(self)
         url_bits.append('chbh=%i' % self.bar_width)
         return url_bits
 
+
 class StackedHorizontalBarChart(BarChart):
+
     def type_to_url(self):
         return 'cht=bhs'
 
+
 class StackedVerticalBarChart(BarChart):
+
     def type_to_url(self):
         return 'cht=bvs'
 
+
 class GroupedBarChart(BarChart):
+
     def __init__(self, *args, **kwargs):
         assert(type(self) != GroupedBarChart)  # This is an abstract class
         BarChart.__init__(self, *args, **kwargs)
         self.bar_spacing = None
+
     def set_bar_spacing(self, spacing):
         self.bar_spacing = spacing
+
     def get_url_bits(self):
         # Skip 'BarChart.get_url_bits' and call Chart directly so the parent
         # doesn't add "chbh" before we do.
@@ -525,47 +599,62 @@ class GroupedBarChart(BarChart):
             url_bits.append('chbh=%i' % self.bar_width)
         return url_bits
 
+
 class GroupedHorizontalBarChart(GroupedBarChart):
+
     def type_to_url(self):
         return 'cht=bhg'
 
+
 class GroupedVerticalBarChart(GroupedBarChart):
+
     def type_to_url(self):
         return 'cht=bvg'
 
+
 class PieChart(Chart):
+
     def __init__(self, *args, **kwargs):
         assert(type(self) != PieChart)  # This is an abstract class
         Chart.__init__(self, *args, **kwargs)
         self.pie_labels = []
+
     def set_pie_labels(self, labels):
         self.pie_labels = labels
+
     def get_url_bits(self):
         url_bits = Chart.get_url_bits(self)
         if self.pie_labels:
             url_bits.append('chl=%s' % '|'.join(self.pie_labels))
         return url_bits
 
+
 class PieChart2D(PieChart):
+
     def type_to_url(self):
         return 'cht=p'
 
+
 class PieChart3D(PieChart):
+
     def type_to_url(self):
         return 'cht=p3'
 
+
 class VennChart(Chart):
+
     def type_to_url(self):
         return 'cht=v'
+
 
 def test():
     chart = GroupedVerticalBarChart(320, 200)
     chart = PieChart2D(320, 200)
     chart = ScatterChart(320, 200)
     chart = SimpleLineChart(320, 200)
-    sine_data = [ math.sin(float(a) / 10) * 2000 + 2000 for a in xrange(100) ]
-    random_data = [ a * random.random() * 30 for a in xrange(40) ]
-    random_data2 = [ random.random() * 4000 for a in xrange(10) ]
+    sine_data = [math.sin(float(a) / 10) * 2000 + 2000 for a in xrange(100)]
+    random_data = [a * random.random() * 30 for a in xrange(40)]
+    random_data2 = [random.random() * 4000 for a in xrange(10)]
 #    chart.set_bar_width(50)
 #    chart.set_bar_spacing(0)
     chart.add_data(sine_data)
@@ -599,14 +688,7 @@ def test():
 
     chart.add_fill_simple('303030A0')
 
-
-    chart = SimpleLineChart(320, 200)
-    data = [ 1, 5, 30, 10, 25 ]
-    chart.add_data(data)
-    chart.set_title('Hello World!')
-    chart.set_axis_range(Axis.LEFT, 0, 10)
-    print chart.get_url()
-    chart.download('hello.png')
+    chart.download('test.png')
 
     url = chart.get_url()
     print url
@@ -615,6 +697,6 @@ def test():
         open('meh.png', 'wb').write(data)
         os.system('start meh.png')
 
+
 if __name__ == '__main__':
     test()
-
