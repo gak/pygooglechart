@@ -36,7 +36,6 @@ def cat_proximity():
     chart.set_axis_style(index, '202020', font_size=10, alignment=0)
     chart.set_axis_positions(index, [50])
 
-    print chart.get_url()
     chart.download('label-cat-proximity.png')
 
 def many_labels():
