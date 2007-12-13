@@ -413,6 +413,7 @@ class Chart(object):
 
     def set_axis_labels(self, axis_type, values):
         assert(axis_type in Axis.TYPES)
+        values = [ urllib.quote(a) for a in values ]
         axis_index = len(self.axis)
         axis = LabelAxis(axis_index, axis_type, values)
         self.axis.append(axis)
@@ -432,7 +433,8 @@ class Chart(object):
             raise InvalidParametersException('Axis index %i has not been ' \
                 'created' % axis)
 
-    def set_axis_style(self, axis_index, colour, font_size=None, alignment=None):
+    def set_axis_style(self, axis_index, colour, font_size=None, \
+            alignment=None):
         try:
             self.axis[axis_index].set_style(colour, font_size, alignment)
         except IndexError:
