@@ -160,14 +160,15 @@ class Axis(object):
     RIGHT = 'r'
     TYPES = (BOTTOM, TOP, LEFT, RIGHT)
 
-    def __init__(self, axis, **kw):
-        assert(axis in Axis.TYPES)
+    def __init__(self, axis_index, axis_type, **kw):
+        assert(axis_type in Axis.TYPES)
         self.has_style = False
-        self.index = None
+        self.axis_index = axis_index
+        self.axis_type = axis_type
         self.positions = None
 
-    def set_index(self, index):
-        self.index = index
+    def set_index(self, axis_index):
+        self.axis_index = axis_index
 
     def set_positions(self, positions):
         self.positions = positions
@@ -181,7 +182,7 @@ class Axis(object):
 
     def style_to_url(self):
         bits = []
-        bits.append(str(self.index))
+        bits.append(str(self.axis_index))
         bits.append(self.colour)
         if self.font_size is not None:
             bits.append(str(self.font_size))
@@ -191,30 +192,30 @@ class Axis(object):
 
     def positions_to_url(self):
         bits = []
-        bits.append(str(self.index))
+        bits.append(str(self.axis_index))
         bits += [str(a) for a in self.positions]
         return ','.join(bits)
 
 
 class LabelAxis(Axis):
 
-    def __init__(self, axis, values, **kwargs):
-        Axis.__init__(self, axis, **kwargs)
+    def __init__(self, axis_index, axis_type, values, **kwargs):
+        Axis.__init__(self, axis_index, axis_type, **kwargs)
         self.values = [str(a) for a in values]
 
     def __repr__(self):
-        return '%i:|%s' % (self.index, '|'.join(self.values))
+        return '%i:|%s' % (self.axis_index, '|'.join(self.values))
 
 
 class RangeAxis(Axis):
 
-    def __init__(self, axis, low, high, **kwargs):
-        Axis.__init__(self, axis, **kwargs)
+    def __init__(self, axis_index, axis_type, low, high, **kwargs):
+        Axis.__init__(self, axis_index, axis_type, **kwargs)
         self.low = low
         self.high = high
 
     def __repr__(self):
-        return '%i,%s,%s' % (self.index, self.low, self.high)
+        return '%i,%s,%s' % (self.axis_index, self.low, self.high)
 
 # Chart Classes
 # -----------------------------------------------------------------------------
@@ -252,12 +253,13 @@ class Chart(object):
             Chart.BACKGROUND: None,
             Chart.CHART: None,
         }
-        self.axis = {
-            Axis.TOP: None,
-            Axis.BOTTOM: None,
-            Axis.LEFT: None,
-            Axis.RIGHT: None,
-        }
+#        self.axis = {
+#            Axis.TOP: None,
+#            Axis.BOTTOM: None,
+#            Axis.LEFT: None,
+#            Axis.RIGHT: None,
+#        }
+        self.axis = []
         self.markers = []
 
     # URL generation
@@ -409,25 +411,33 @@ class Chart(object):
     # Axis Labels
     # -------------------------------------------------------------------------
 
-    def set_axis_labels(self, axis, values):
-        assert(axis in Axis.TYPES)
-        self.axis[axis] = LabelAxis(axis, values)
+    def set_axis_labels(self, axis_type, values):
+        assert(axis_type in Axis.TYPES)
+        axis_index = len(self.axis)
+        axis = LabelAxis(axis_index, axis_type, values)
+        self.axis.append(axis)
+        return axis_index
 
-    def set_axis_range(self, axis, low, high):
-        assert(axis in Axis.TYPES)
-        self.axis[axis] = RangeAxis(axis, low, high)
+    def set_axis_range(self, axis_type, low, high):
+        assert(axis_type in Axis.TYPES)
+        axis_index = len(self.axis)
+        axis = RangeAxis(axis_index, axis_type, low, high)
+        self.axis.append(axis)
+        return axis_index
 
-    def set_axis_positions(self, axis, positions):
-        assert(axis in Axis.TYPES)
-        if not self.axis[axis]:
-            raise InvalidParametersException('Please create an axis first')
-        self.axis[axis].set_positions(positions)
+    def set_axis_positions(self, axis_index, positions):
+        try:
+            self.axis[axis_index].set_positions(positions)
+        except IndexError:
+            raise InvalidParametersException('Axis index %i has not been ' \
+                'created' % axis)
 
-    def set_axis_style(self, axis, colour, font_size=None, alignment=None):
-        assert(axis in Axis.TYPES)
-        if not self.axis[axis]:
-            raise InvalidParametersException('Please create an axis first')
-        self.axis[axis].set_style(colour, font_size, alignment)
+    def set_axis_style(self, axis_index, colour, font_size=None, alignment=None):
+        try:
+            self.axis[axis_index].set_style(colour, font_size, alignment)
+        except IndexError:
+            raise InvalidParametersException('Axis index %i has not been ' \
+                'created' % axis)
 
     def axis_to_url(self):
         available_axis = []
@@ -436,12 +446,8 @@ class Chart(object):
         positions = []
         styles = []
         index = -1
-        for position, axis in self.axis.items():
-            if not axis:
-                continue
-            index += 1
-            axis.set_index(index)
-            available_axis.append(position)
+        for axis in self.axis:
+            available_axis.append(axis.axis_type)
             if isinstance(axis, RangeAxis):
                 range_axis.append(repr(axis))
             if isinstance(axis, LabelAxis):
@@ -670,11 +676,13 @@ def test():
 #        'aabbcc00', 0.5)
 #    chart.fill_linear_stripes(Chart.CHART, 20, '204070', .2, '300040', .2,
 #        'aabbcc00', 0.2)
-    chart.set_axis_range(Axis.LEFT, 0, 10)
-    chart.set_axis_range(Axis.RIGHT, 5, 30)
-    chart.set_axis_labels(Axis.BOTTOM, [1, 25, 95])
-    chart.set_axis_positions(Axis.BOTTOM, [1, 25, 95])
-    chart.set_axis_style(Axis.BOTTOM, 'FFFFFF', 15)
+    axis_left_index = chart.set_axis_range(Axis.LEFT, 0, 10)
+    axis_left_index = chart.set_axis_range(Axis.LEFT, 0, 10)
+    axis_left_index = chart.set_axis_range(Axis.LEFT, 0, 10)
+    axis_right_index = chart.set_axis_range(Axis.RIGHT, 5, 30)
+    axis_bottom_index = chart.set_axis_labels(Axis.BOTTOM, [1, 25, 95])
+    chart.set_axis_positions(axis_bottom_index, [1, 25, 95])
+    chart.set_axis_style(axis_bottom_index, '003050', 15)
 
 #    chart.set_pie_labels(('apples', 'oranges', 'bananas'))
 
