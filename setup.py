@@ -1,6 +1,8 @@
 from distutils.core import setup
+from pygooglechart import __version__
+
 setup(name='pygooglechart',
-      version='0.1.1',
+      version=__version__,
       py_modules=['pygooglechart'],
       description='A complete Python wrapper for the Google Chart API',
       author='Gerald Kaszuba',
