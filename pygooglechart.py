@@ -30,7 +30,7 @@ import re
 # Helper variables and functions
 # -----------------------------------------------------------------------------
 
-__version__ = '0.1.1'
+__version__ = '0.1.2'
 
 reo_colour = re.compile('^([A-Fa-f0-9]{2,2}){3,4}$')
 
