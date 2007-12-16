@@ -26,8 +26,8 @@ def xy_random():
 
 def xy_rect():
     chart = XYLineChart(settings.width, settings.height)
-    chart.add_data([0, 100, 100, 0, 0])
-    chart.add_data([0, 0, 100, 100, 0])
+    chart.add_data([10, 90, 90, 10, 10])
+    chart.add_data([10, 10, 90, 90, 10])
     chart.download('line-xy-rect.png')
 
 def xy_circle():

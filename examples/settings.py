@@ -1,3 +1,3 @@
 width = 250
-height = 150
+height = 100
 
