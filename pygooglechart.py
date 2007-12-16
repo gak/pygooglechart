@@ -630,7 +630,7 @@ class PieChart(Chart):
         self.pie_labels = []
 
     def set_pie_labels(self, labels):
-        self.pie_labels = labels
+        self.pie_labels = [urllib.quote(a) for a in labels]
 
     def get_url_bits(self):
         url_bits = Chart.get_url_bits(self)
