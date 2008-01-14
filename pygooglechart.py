@@ -84,13 +84,14 @@ class SimpleData(Data):
     enc_map = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
 
     def __repr__(self):
+        max_value = self.max_value()
         encoded_data = []
         for data in self.data:
             sub_data = []
             for value in data:
                 if value is None:
                     sub_data.append('_')
-                elif value >= 0 and value <= SimpleData.max_value:
+                elif value >= 0 and value <= max_value:
                     sub_data.append(SimpleData.enc_map[value])
                 else:
                     raise DataOutOfRangeException()
@@ -105,14 +106,15 @@ class SimpleData(Data):
 class TextData(Data):
 
     def __repr__(self):
+        max_value = self.max_value()
         encoded_data = []
         for data in self.data:
             sub_data = []
             for value in data:
                 if value is None:
                     sub_data.append(-1)
-                elif value >= 0 and value <= TextData.max_value:
-                    sub_data.append(str(float(value)))
+                elif value >= 0 and value <= max_value:
+                    sub_data.append("%.1f" % float(value))
                 else:
                     raise DataOutOfRangeException()
             encoded_data.append(','.join(sub_data))
@@ -128,6 +130,7 @@ class ExtendedData(Data):
         'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-.'
 
     def __repr__(self):
+        max_value = self.max_value()
         encoded_data = []
         enc_size = len(ExtendedData.enc_map)
         for data in self.data:
@@ -135,7 +138,7 @@ class ExtendedData(Data):
             for value in data:
                 if value is None:
                     sub_data.append('__')
-                elif value >= 0 and value <= ExtendedData.max_value:
+                elif value >= 0 and value <= max_value:
                     first, second = divmod(int(value), enc_size)
                     sub_data.append('%s%s' % (
                         ExtendedData.enc_map[first],
