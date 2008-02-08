@@ -94,7 +94,8 @@ class SimpleData(Data):
                 elif value >= 0 and value <= max_value:
                     sub_data.append(SimpleData.enc_map[value])
                 else:
-                    raise DataOutOfRangeException()
+                    raise DataOutOfRangeException('cannot encode value: %d'
+                                                  % value)
             encoded_data.append(''.join(sub_data))
         return 'chd=s:' + ','.join(encoded_data)
 
@@ -102,6 +103,13 @@ class SimpleData(Data):
     def max_value():
         return 61
 
+    @classmethod
+    def scale_value(cls, value, range):
+        lower, upper = range
+        max_value = cls.max_value()
+        scaled = int(round((float(value) - lower) * max_value / upper))
+        clipped = max(0, min(scaled, max_value))
+        return clipped
 
 class TextData(Data):
 
@@ -124,6 +132,13 @@ class TextData(Data):
     def max_value():
         return 100
 
+    @classmethod
+    def scale_value(cls, value, range):
+        lower, upper = range
+        max_value = cls.max_value()
+        scaled = (float(value) - lower) * max_value / upper
+        clipped = max(0, min(scaled, max_value))
+        return clipped
 
 class ExtendedData(Data):
     enc_map = \
@@ -153,6 +168,15 @@ class ExtendedData(Data):
     @staticmethod
     def max_value():
         return 4095
+
+    @classmethod
+    def scale_value(cls, value, range):
+        lower, upper = range
+        max_value = cls.max_value()
+        scaled = int(round((float(value) - lower) * max_value / upper))
+        clipped = max(0, min(scaled, max_value))
+        return clipped
+
 
 # Axis Classes
 # -----------------------------------------------------------------------------
@@ -240,7 +264,8 @@ class Chart(object):
     LINEAR_GRADIENT = 'lg'
     LINEAR_STRIPES = 'ls'
 
-    def __init__(self, width, height, title=None, legend=None, colours=None):
+    def __init__(self, width, height, title=None, legend=None, colours=None,
+                 auto_scale=True, x_range=None, y_range=None):
         assert(type(self) != Chart)  # This is an abstract class
         assert(isinstance(width, int))
         assert(isinstance(height, int))
@@ -250,6 +275,15 @@ class Chart(object):
         self.set_title(title)
         self.set_legend(legend)
         self.set_colours(colours)
+
+        # Data for scaling.
+        self.auto_scale = auto_scale    # Whether to automatically scale data
+        self.x_range = x_range          # (min, max) x-axis range for scaling
+        self.y_range = y_range          # (min, max) y-axis range for scaling
+        self.scaled_data_class = None
+        self.scaled_x_range = None
+        self.scaled_y_range = None
+
         self.fill_types = {
             Chart.BACKGROUND: None,
             Chart.CHART: None,
@@ -387,20 +421,93 @@ class Chart(object):
     # -------------------------------------------------------------------------
 
     def data_class_detection(self, data):
-        """
-        Detects and returns the data type required based on the range of the
-        data given. The data given must be lists of numbers within a list.
+        """Determines the appropriate data encoding type to give satisfactory
+        resolution (http://code.google.com/apis/chart/#chart_data).
         """
         assert(isinstance(data, list) or isinstance(data, tuple))
-        max_value = None
-        for a in data:
-            assert(isinstance(a, list) or isinstance(a, tuple))
-            if max_value is None or max(a) > max_value:
-                max_value = max(a)
-        for data_class in (SimpleData, TextData, ExtendedData):
-            if max_value <= data_class.max_value():
-                return data_class
-        raise DataOutOfRangeException()
+        if not isinstance(self, (LineChart, BarChart, ScatterChart)):
+            # From the link above:
+            #   Simple encoding is suitable for all other types of chart
+            #   regardless of size.
+            return SimpleData
+        elif self.height < 100:
+            # The link above indicates that line and bar charts less
+            # than 300px in size can be suitably represented with the
+            # simple encoding. I've found that this isn't sufficient,
+            # e.g. examples/line-xy-circle.png. Let's try 100px.
+            return SimpleData
+        elif self.height < 500:
+            return TextData
+        else:
+            return ExtendedData
+
+    def data_x_range(self):
+        """Return a 2-tuple giving the minimum and maximum x-axis 
+        data range.
+        """
+        try:
+            lower = min([min(s) for type, s in self.annotated_data()
+                         if type == 'x'])
+            upper = max([max(s) for type, s in self.annotated_data()
+                         if type == 'x'])
+            return (lower, upper)
+        except ValueError:
+            return None     # no x-axis datasets
+
+    def data_y_range(self):
+        """Return a 2-tuple giving the minimum and maximum y-axis 
+        data range.
+        """
+        try:
+            lower = min([min(s) for type, s in self.annotated_data()
+                         if type == 'y'])
+            upper = max([max(s) for type, s in self.annotated_data()
+                         if type == 'y'])
+            return (lower, upper)
+        except ValueError:
+            return None     # no y-axis datasets
+
+    def scaled_data(self, data_class, x_range=None, y_range=None):
+        """Scale `self.data` as appropriate for the given data encoding
+        (data_class) and return it.
+
+        An optional `y_range` -- a 2-tuple (lower, upper) -- can be
+        given to specify the y-axis bounds. If not given, the range is
+        inferred from the data: (0, <max-value>) presuming no negative
+        values, or (<min-value>, <max-value>) if there are negative
+        values.  `self.scaled_y_range` is set to the actual lower and
+        upper scaling range.
+
+        Ditto for `x_range`. Note that some chart types don't have x-axis
+        data.
+        """
+        self.scaled_data_class = data_class
+
+        # Determine the x-axis range for scaling.
+        if x_range is None:
+            x_range = self.data_x_range()
+            if x_range and x_range[0] > 0:
+                x_range = (0, x_range[1])
+        self.scaled_x_range = x_range
+
+        # Determine the y-axis range for scaling.
+        if y_range is None:
+            y_range = self.data_y_range()
+            if y_range and y_range[0] > 0:
+                y_range = (0, y_range[1])
+        self.scaled_y_range = y_range
+
+        scaled_data = []
+        for type, dataset in self.annotated_data():
+            if type == 'x':
+                scale_range = x_range
+            elif type == 'y':
+                scale_range = y_range
+            elif type == 'marker-size':
+                scale_range = (0, max(dataset))
+            scaled_data.append([data_class.scale_value(v, scale_range)
+                                for v in dataset])
+        return scaled_data
 
     def add_data(self, data):
         self.data.append(data)
@@ -411,7 +518,11 @@ class Chart(object):
             data_class = self.data_class_detection(self.data)
         if not issubclass(data_class, Data):
             raise UnknownDataTypeException()
-        return repr(data_class(self.data))
+        if self.auto_scale:
+            data = self.scaled_data(data_class, self.x_range, self.y_range)
+        else:
+            data = self.data
+        return repr(data_class(data))
 
     # Axis Labels
     # -------------------------------------------------------------------------
@@ -503,12 +614,16 @@ class Chart(object):
 
 class ScatterChart(Chart):
 
-    def __init__(self, *args, **kwargs):
-        Chart.__init__(self, *args, **kwargs)
-
     def type_to_url(self):
         return 'cht=s'
 
+    def annotated_data(self):
+        yield ('x', self.data[0])
+        yield ('y', self.data[1])
+        if len(self.data) > 2:
+            # The optional third dataset is relative sizing for point
+            # markers.
+            yield ('marker-size', self.data[2])
 
 class LineChart(Chart):
 
@@ -554,12 +669,23 @@ class SimpleLineChart(LineChart):
     def type_to_url(self):
         return 'cht=lc'
 
+    def annotated_data(self):
+        # All datasets are y-axis data.
+        for dataset in self.data:
+            yield ('y', dataset)
 
 class XYLineChart(LineChart):
 
     def type_to_url(self):
         return 'cht=lxy'
 
+    def annotated_data(self):
+        # Datasets alternate between x-axis, y-axis.
+        for i, dataset in enumerate(self.data):
+            if i % 2 == 0:
+                yield ('x', dataset)
+            else:
+                yield ('y', dataset)
 
 class BarChart(Chart):
 
@@ -573,7 +699,8 @@ class BarChart(Chart):
 
     def get_url_bits(self):
         url_bits = Chart.get_url_bits(self)
-        url_bits.append('chbh=%i' % self.bar_width)
+        if self.bar_width is not None:
+            url_bits.append('chbh=%i' % self.bar_width)
         return url_bits
 
 
@@ -582,11 +709,18 @@ class StackedHorizontalBarChart(BarChart):
     def type_to_url(self):
         return 'cht=bhs'
 
+    def annotated_data(self):
+        for dataset in self.data:
+            yield ('x', dataset)
 
 class StackedVerticalBarChart(BarChart):
 
     def type_to_url(self):
         return 'cht=bvs'
+
+    def annotated_data(self):
+        for dataset in self.data:
+            yield ('y', dataset)
 
 
 class GroupedBarChart(BarChart):
@@ -595,18 +729,33 @@ class GroupedBarChart(BarChart):
         assert(type(self) != GroupedBarChart)  # This is an abstract class
         BarChart.__init__(self, *args, **kwargs)
         self.bar_spacing = None
+        self.group_spacing = None
 
     def set_bar_spacing(self, spacing):
+        """Set spacing between bars in a group."""
         self.bar_spacing = spacing
+
+    def set_group_spacing(self, spacing):
+        """Set spacing between groups of bars."""
+        self.group_spacing = spacing
 
     def get_url_bits(self):
         # Skip 'BarChart.get_url_bits' and call Chart directly so the parent
         # doesn't add "chbh" before we do.
         url_bits = Chart.get_url_bits(self)
-        if self.bar_spacing is not None:
+        if self.group_spacing is not None:
+            if self.bar_spacing is None:
+                raise InvalidParametersException('Bar spacing is required to ' \
+                    'be set when setting group spacing')
             if self.bar_width is None:
                 raise InvalidParametersException('Bar width is required to ' \
-                    'be set when setting spacing')
+                    'be set when setting bar spacing')
+            url_bits.append('chbh=%i,%i,%i'
+                % (self.bar_width, self.bar_spacing, self.group_spacing))
+        elif self.bar_spacing is not None:
+            if self.bar_width is None:
+                raise InvalidParametersException('Bar width is required to ' \
+                    'be set when setting bar spacing')
             url_bits.append('chbh=%i,%i' % (self.bar_width, self.bar_spacing))
         else:
             url_bits.append('chbh=%i' % self.bar_width)
@@ -618,11 +767,19 @@ class GroupedHorizontalBarChart(GroupedBarChart):
     def type_to_url(self):
         return 'cht=bhg'
 
+    def annotated_data(self):
+        for dataset in self.data:
+            yield ('x', dataset)
+
 
 class GroupedVerticalBarChart(GroupedBarChart):
 
     def type_to_url(self):
         return 'cht=bvg'
+
+    def annotated_data(self):
+        for dataset in self.data:
+            yield ('y', dataset)
 
 
 class PieChart(Chart):
@@ -641,6 +798,12 @@ class PieChart(Chart):
             url_bits.append('chl=%s' % '|'.join(self.pie_labels))
         return url_bits
 
+    def annotated_data(self):
+        # Datasets are all y-axis data. However, there should only be
+        # one dataset for pie charts.
+        for dataset in self.data:
+            yield ('y', dataset)
+
 
 class PieChart2D(PieChart):
 
@@ -658,6 +821,10 @@ class VennChart(Chart):
 
     def type_to_url(self):
         return 'cht=v'
+
+    def annotated_data(self):
+        for dataset in self.data:
+            yield ('y', dataset)
 
 
 def test():

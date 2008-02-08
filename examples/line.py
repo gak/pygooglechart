@@ -14,24 +14,27 @@ import settings
 import helper
 
 def simple_random():
-    chart = SimpleLineChart(settings.width, settings.height)
+    chart = SimpleLineChart(settings.width, settings.height, y_range=(0, 100))
     chart.add_data(helper.random_data())
     chart.download('line-simple-random.png')
 
 def xy_random():
-    chart = XYLineChart(settings.width, settings.height)
+    chart = XYLineChart(settings.width, settings.height, 
+                        x_range=(0, 100), y_range=(0, 100))
     chart.add_data(helper.random_data())
     chart.add_data(helper.random_data())
     chart.download('line-xy-random.png')
 
 def xy_rect():
-    chart = XYLineChart(settings.width, settings.height)
+    chart = XYLineChart(settings.width, settings.height,
+                        x_range=(0, 100), y_range=(0, 100))
     chart.add_data([10, 90, 90, 10, 10])
     chart.add_data([10, 10, 90, 90, 10])
     chart.download('line-xy-rect.png')
 
 def xy_circle():
-    chart = XYLineChart(settings.width, settings.height)
+    chart = XYLineChart(settings.width, settings.height,
+                        x_range=(0, 100), y_range=(0, 100))
     steps = 40
     xradius = 25
     yradius = 45
