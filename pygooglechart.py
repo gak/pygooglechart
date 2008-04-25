@@ -30,7 +30,7 @@ import re
 # Helper variables and functions
 # -----------------------------------------------------------------------------
 
-__version__ = '0.1.2'
+__version__ = '0.1.3'
 
 reo_colour = re.compile('^([A-Fa-f0-9]{2,2}){3,4}$')
 
@@ -442,7 +442,7 @@ class Chart(object):
             return ExtendedData
 
     def data_x_range(self):
-        """Return a 2-tuple giving the minimum and maximum x-axis 
+        """Return a 2-tuple giving the minimum and maximum x-axis
         data range.
         """
         try:
@@ -455,7 +455,7 @@ class Chart(object):
             return None     # no x-axis datasets
 
     def data_y_range(self):
-        """Return a 2-tuple giving the minimum and maximum y-axis 
+        """Return a 2-tuple giving the minimum and maximum y-axis
         data range.
         """
         try:
