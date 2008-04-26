@@ -135,10 +135,14 @@ class TextData(Data):
     @classmethod
     def scale_value(cls, value, range):
         lower, upper = range
-        max_value = cls.max_value()
-        scaled = (float(value) - lower) * max_value / upper
-        clipped = max(0, min(scaled, max_value))
-        return clipped
+        if upper > lower:
+            max_value = cls.max_value()
+            scaled = (float(value) - lower) * max_value / upper
+            clipped = max(0, min(scaled, max_value))
+            return clipped
+        else:
+            return lower
+
 
 class ExtendedData(Data):
     enc_map = \
