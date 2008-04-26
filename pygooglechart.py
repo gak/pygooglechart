@@ -277,6 +277,8 @@ class Chart(object):
     BASE_URL = 'http://chart.apis.google.com/chart?'
     BACKGROUND = 'bg'
     CHART = 'c'
+    ALPHA = 'a'
+    VALID_SOLID_FILL_TYPES = (BACKGROUND, CHART, ALPHA)
     SOLID = 's'
     LINEAR_GRADIENT = 'lg'
     LINEAR_STRIPES = 'ls'
@@ -304,10 +306,12 @@ class Chart(object):
         self.fill_types = {
             Chart.BACKGROUND: None,
             Chart.CHART: None,
+            Chart.ALPHA: None,
         }
         self.fill_area = {
             Chart.BACKGROUND: None,
             Chart.CHART: None,
+            Chart.ALPHA: None,
         }
         self.axis = []
         self.markers = []
@@ -402,7 +406,7 @@ class Chart(object):
     # -------------------------------------------------------------------------
 
     def fill_solid(self, area, colour):
-        assert(area in (Chart.BACKGROUND, Chart.CHART))
+        assert(area in Chart.VALID_SOLID_FILL_TYPES)
         _check_colour(colour)
         self.fill_area[area] = colour
         self.fill_types[area] = Chart.SOLID
@@ -421,20 +425,20 @@ class Chart(object):
         return args
 
     def fill_linear_gradient(self, area, angle, *args):
-        assert(area in (Chart.BACKGROUND, Chart.CHART))
+        assert(area in Chart.VALID_SOLID_FILL_TYPES)
         args = self._check_fill_linear(angle, *args)
         self.fill_types[area] = Chart.LINEAR_GRADIENT
         self.fill_area[area] = ','.join([str(angle)] + args)
 
     def fill_linear_stripes(self, area, angle, *args):
-        assert(area in (Chart.BACKGROUND, Chart.CHART))
+        assert(area in Chart.VALID_SOLID_FILL_TYPES)
         args = self._check_fill_linear(angle, *args)
         self.fill_types[area] = Chart.LINEAR_STRIPES
         self.fill_area[area] = ','.join([str(angle)] + args)
 
     def fill_to_url(self):
         areas = []
-        for area in (Chart.BACKGROUND, Chart.CHART):
+        for area in (Chart.BACKGROUND, Chart.CHART, Chart.ALPHA):
             if self.fill_types[area]:
                 areas.append('%s,%s,%s' % (area, self.fill_types[area], \
                     self.fill_area[area]))
@@ -716,14 +720,26 @@ class BarChart(Chart):
         assert(type(self) != BarChart)  # This is an abstract class
         Chart.__init__(self, *args, **kwargs)
         self.bar_width = None
+        self.zero_lines = {}
 
     def set_bar_width(self, bar_width):
         self.bar_width = bar_width
 
-    def get_url_bits(self, data_class=None):
+    def set_zero_line(self, index, zero_line):
+        self.zero_lines[index] = zero_line
+
+    def get_url_bits(self, data_class=None, skip_chbh=False):
         url_bits = Chart.get_url_bits(self, data_class=data_class)
-        if self.bar_width is not None:
+        if not skip_chbh and self.bar_width is not None:
             url_bits.append('chbh=%i' % self.bar_width)
+        zero_line = []
+        if self.zero_lines:
+            for index in xrange(max(self.zero_lines) + 1):
+                if index in self.zero_lines:
+                    zero_line.append(str(self.zero_lines[index]))
+                else:
+                    zero_line.append('0')
+            url_bits.append('chp=%s' % ','.join(zero_line))
         return url_bits
 
 
@@ -762,7 +778,8 @@ class GroupedBarChart(BarChart):
     def get_url_bits(self, data_class=None):
         # Skip 'BarChart.get_url_bits' and call Chart directly so the parent
         # doesn't add "chbh" before we do.
-        url_bits = Chart.get_url_bits(self, data_class=data_class)
+        url_bits = BarChart.get_url_bits(self, data_class=data_class,
+            skip_chbh=True)
         if self.group_spacing is not None:
             if self.bar_spacing is None:
                 raise InvalidParametersException('Bar spacing is required to ' \
@@ -887,25 +904,26 @@ def test():
     chart = ScatterChart(320, 200)
     chart = SimpleLineChart(320, 200)
     chart = GroupedVerticalBarChart(320, 200)
-    chart = SplineRadarChart(500, 500)
-    chart = MapChart(440, 220)
-    chart = GoogleOMeterChart(440, 220, x_range=(0, 100))
+#    chart = SplineRadarChart(500, 500)
+#    chart = MapChart(440, 220)
+#    chart = GoogleOMeterChart(440, 220, x_range=(0, 100))
     sine_data = [math.sin(float(a) / math.pi) * 100 for a in xrange(100)]
     random_data = [random.random() * 100 for a in xrange(100)]
     random_data2 = [random.random() * 50 for a in xrange(100)]
 #    chart.set_bar_width(50)
 #    chart.set_bar_spacing(0)
-#    chart.add_data(sine_data)
-#    chart.add_data(random_data)
+    chart.add_data(sine_data)
+    chart.add_data(random_data)
+    chart.set_zero_line(1, .5)
 #    chart.add_data(random_data2)
 #    chart.set_line_style(0, thickness=5)
 #    chart.set_line_style(1, thickness=2, line_segment=10, blank_segment=5)
 #    chart.set_title('heloooo weeee')
 #    chart.set_legend(('sine wave', 'random * x'))
-#    chart.set_colours(('ee2000', 'DDDDAA', 'fF03f2'))
-#    chart.fill_solid(Chart.BACKGROUND, '123456')
-#    chart.fill_linear_gradient(Chart.CHART, 20, '004070', 1, '300040', 0,
-#        'aabbcc00', 0.5)
+    chart.set_colours(('ee2000', 'DDDDAA', 'fF03f2'))
+#    chart.fill_solid(Chart.ALPHA, '123456')
+#    chart.fill_linear_gradient(Chart.ALPHA, 20, '004070', 1, '300040', 0,
+#        'aabbcc55', 0.5)
 #    chart.fill_linear_stripes(Chart.CHART, 20, '204070', .2, '300040', .2,
 #        'aabbcc00', 0.2)
 #    axis_left_index = chart.set_axis_range(Axis.LEFT, 0, 10)
@@ -914,7 +932,7 @@ def test():
 #    chart.set_axis_positions(axis_bottom_index, [1, 25, 95])
 #    chart.set_axis_style(axis_bottom_index, '003050', 15)
 
-    chart.set_pie_labels(('apples', 'oranges', 'bananas'))
+#    chart.set_pie_labels(('apples', 'oranges', 'bananas'))
 
 #    chart.set_grid(10, 10)
 #    for a in xrange(0, 100, 10):
@@ -929,8 +947,8 @@ def test():
 #    chart.add_data([1,2,3])
 #    chart.set_colours(('EEEEEE', '000000', '00FF00'))
 
-    chart.add_data([50,75])
-    chart.set_pie_labels(('apples', 'oranges'))
+#    chart.add_data([50,75])
+#    chart.set_pie_labels(('apples', 'oranges'))
 
     url = chart.get_url()
     print url
