@@ -292,12 +292,6 @@ class Chart(object):
             Chart.BACKGROUND: None,
             Chart.CHART: None,
         }
-#        self.axis = {
-#            Axis.TOP: None,
-#            Axis.BOTTOM: None,
-#            Axis.LEFT: None,
-#            Axis.RIGHT: None,
-#        }
         self.axis = []
         self.markers = []
 
@@ -353,7 +347,7 @@ class Chart(object):
             self.title = None
 
     def set_legend(self, legend):
-        # legend needs to be a list, tuple or None
+        """legend needs to be a list, tuple or None"""
         assert(isinstance(legend, list) or isinstance(legend, tuple) or
             legend is None)
         if legend:
@@ -673,6 +667,11 @@ class SimpleLineChart(LineChart):
         # All datasets are y-axis data.
         for dataset in self.data:
             yield ('y', dataset)
+
+class SparkLineChart(SimpleLineChart):
+
+    def type_to_url(self):
+        return 'cht=ls'
 
 class XYLineChart(LineChart):
 
