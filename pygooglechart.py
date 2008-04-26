@@ -546,6 +546,10 @@ class Chart(object):
             data = self.data
         return repr(data_class(data))
 
+    def annotated_data(self):
+        for dataset in self.data:
+            yield ('x', dataset)
+
     # Axis Labels
     # -------------------------------------------------------------------------
 
@@ -728,9 +732,6 @@ class StackedHorizontalBarChart(BarChart):
     def type_to_url(self):
         return 'cht=bhs'
 
-    def annotated_data(self):
-        for dataset in self.data:
-            yield ('x', dataset)
 
 class StackedVerticalBarChart(BarChart):
 
@@ -785,10 +786,6 @@ class GroupedHorizontalBarChart(GroupedBarChart):
 
     def type_to_url(self):
         return 'cht=bhg'
-
-    def annotated_data(self):
-        for dataset in self.data:
-            yield ('x', dataset)
 
 
 class GroupedVerticalBarChart(GroupedBarChart):
@@ -851,10 +848,6 @@ class RadarChart(Chart):
     def type_to_url(self):
         return 'cht=r'
 
-    def annotated_data(self):
-        for dataset in self.data:
-            yield ('x', dataset)
-
 class SplineRadarChart(RadarChart):
 
     def type_to_url(self):
@@ -881,9 +874,13 @@ class MapChart(Chart):
             url_bits.append('chld=%s' % ''.join(self.codes))
         return url_bits
 
-    def annotated_data(self):
-        for dataset in self.data:
-            yield ('x', dataset)
+
+class GoogleOMeterChart(PieChart):
+    """Inheriting from PieChart because of similar labeling"""
+
+    def type_to_url(self):
+        return 'cht=gom'
+
 
 def test():
     chart = PieChart2D(320, 200)
@@ -892,6 +889,7 @@ def test():
     chart = GroupedVerticalBarChart(320, 200)
     chart = SplineRadarChart(500, 500)
     chart = MapChart(440, 220)
+    chart = GoogleOMeterChart(440, 220, x_range=(0, 100))
     sine_data = [math.sin(float(a) / math.pi) * 100 for a in xrange(100)]
     random_data = [random.random() * 100 for a in xrange(100)]
     random_data2 = [random.random() * 50 for a in xrange(100)]
@@ -916,7 +914,7 @@ def test():
 #    chart.set_axis_positions(axis_bottom_index, [1, 25, 95])
 #    chart.set_axis_style(axis_bottom_index, '003050', 15)
 
-#    chart.set_pie_labels(('apples', 'oranges', 'bananas'))
+    chart.set_pie_labels(('apples', 'oranges', 'bananas'))
 
 #    chart.set_grid(10, 10)
 #    for a in xrange(0, 100, 10):
@@ -927,9 +925,13 @@ def test():
 
 #    chart.add_fill_simple('303030A0')
 
-    chart.set_codes(['AU', 'AT', 'US'])
-    chart.add_data([1,2,3])
-    chart.set_colours(('EEEEEE', '000000', '00FF00'))
+#    chart.set_codes(['AU', 'AT', 'US'])
+#    chart.add_data([1,2,3])
+#    chart.set_colours(('EEEEEE', '000000', '00FF00'))
+
+    chart.add_data([50,75])
+    chart.set_pie_labels(('apples', 'oranges'))
+
     url = chart.get_url()
     print url
 
