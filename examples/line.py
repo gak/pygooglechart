@@ -9,6 +9,7 @@ sys.path.insert(0, os.path.join(ROOT, '..'))
 
 from pygooglechart import SimpleLineChart
 from pygooglechart import XYLineChart
+from pygooglechart import SparkLineChart
 
 import settings
 import helper
@@ -19,7 +20,7 @@ def simple_random():
     chart.download('line-simple-random.png')
 
 def xy_random():
-    chart = XYLineChart(settings.width, settings.height, 
+    chart = XYLineChart(settings.width, settings.height,
                         x_range=(0, 100), y_range=(0, 100))
     chart.add_data(helper.random_data())
     chart.add_data(helper.random_data())
@@ -50,11 +51,17 @@ def xy_circle():
     chart.add_data(ylist)
     chart.download('line-xy-circle.png')
 
+def sparklines():
+    chart = SparkLineChart(settings.width, settings.height)
+    chart.add_data(helper.random_data())
+    chart.download('line-sparkline.png')
+
 def main():
     simple_random()
     xy_random()
     xy_rect()
     xy_circle()
+    sparklines()
 
 if __name__ == '__main__':
     main()

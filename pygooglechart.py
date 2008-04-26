@@ -30,7 +30,7 @@ import re
 # Helper variables and functions
 # -----------------------------------------------------------------------------
 
-__version__ = '0.1.2'
+__version__ = '0.2.0'
 
 reo_colour = re.compile('^([A-Fa-f0-9]{2,2}){3,4}$')
 
@@ -79,6 +79,28 @@ class Data(object):
         assert(type(self) != Data)  # This is an abstract class
         self.data = data
 
+    @classmethod
+    def float_scale_value(cls, value, range):
+        lower, upper = range
+        max_value = cls.max_value()
+        scaled = (value-lower) * (float(max_value)/(upper-lower))
+        return scaled
+
+    @classmethod
+    def clip_value(cls, value):
+        clipped = max(0, min(value, cls.max_value()))
+        return clipped
+
+    @classmethod
+    def int_scale_value(cls, value, range):
+        scaled = int(round(cls.float_scale_value(value, range)))
+        return scaled
+
+    @classmethod
+    def scale_value(cls, value, range):
+        scaled = cls.int_scale_value(value, range)
+        clipped = cls.clip_value(scaled)
+        return clipped
 
 class SimpleData(Data):
     enc_map = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
@@ -102,14 +124,6 @@ class SimpleData(Data):
     @staticmethod
     def max_value():
         return 61
-
-    @classmethod
-    def scale_value(cls, value, range):
-        lower, upper = range
-        max_value = cls.max_value()
-        scaled = int(round((float(value) - lower) * max_value / upper))
-        clipped = max(0, min(scaled, max_value))
-        return clipped
 
 class TextData(Data):
 
@@ -135,9 +149,20 @@ class TextData(Data):
     @classmethod
     def scale_value(cls, value, range):
         lower, upper = range
-        max_value = cls.max_value()
-        scaled = (float(value) - lower) * max_value / upper
-        clipped = max(0, min(scaled, max_value))
+        if upper > lower:
+            max_value = cls.max_value()
+            scaled = (float(value) - lower) * max_value / upper
+            clipped = max(0, min(scaled, max_value))
+            return clipped
+        else:
+            return lower
+
+    @classmethod
+    def scale_value(cls, value, range):
+        # use float values instead of integers because we don't need an encode
+        # map index
+        scaled = cls.float_scale_value(value,range)
+        clipped = cls.clip_value(scaled)
         return clipped
 
 class ExtendedData(Data):
@@ -168,14 +193,6 @@ class ExtendedData(Data):
     @staticmethod
     def max_value():
         return 4095
-
-    @classmethod
-    def scale_value(cls, value, range):
-        lower, upper = range
-        max_value = cls.max_value()
-        scaled = int(round((float(value) - lower) * max_value / upper))
-        clipped = max(0, min(scaled, max_value))
-        return clipped
 
 
 # Axis Classes
@@ -260,6 +277,8 @@ class Chart(object):
     BASE_URL = 'http://chart.apis.google.com/chart?'
     BACKGROUND = 'bg'
     CHART = 'c'
+    ALPHA = 'a'
+    VALID_SOLID_FILL_TYPES = (BACKGROUND, CHART, ALPHA)
     SOLID = 's'
     LINEAR_GRADIENT = 'lg'
     LINEAR_STRIPES = 'ls'
@@ -287,33 +306,31 @@ class Chart(object):
         self.fill_types = {
             Chart.BACKGROUND: None,
             Chart.CHART: None,
+            Chart.ALPHA: None,
         }
         self.fill_area = {
             Chart.BACKGROUND: None,
             Chart.CHART: None,
+            Chart.ALPHA: None,
         }
-#        self.axis = {
-#            Axis.TOP: None,
-#            Axis.BOTTOM: None,
-#            Axis.LEFT: None,
-#            Axis.RIGHT: None,
-#        }
         self.axis = []
         self.markers = []
+        self.line_styles = {}
+        self.grid = None
 
     # URL generation
     # -------------------------------------------------------------------------
 
-    def get_url(self):
-        url_bits = self.get_url_bits()
+    def get_url(self, data_class=None):
+        url_bits = self.get_url_bits(data_class=data_class)
         return self.BASE_URL + '&'.join(url_bits)
 
-    def get_url_bits(self):
+    def get_url_bits(self, data_class=None):
         url_bits = []
         # required arguments
         url_bits.append(self.type_to_url())
         url_bits.append('chs=%ix%i' % (self.width, self.height))
-        url_bits.append(self.data_to_url())
+        url_bits.append(self.data_to_url(data_class=data_class))
         # optional arguments
         if self.title:
             url_bits.append('chtt=%s' % self.title)
@@ -329,6 +346,17 @@ class Chart(object):
             url_bits.append(ret)
         if self.markers:
             url_bits.append(self.markers_to_url())
+        if self.line_styles:
+            style = []
+            for index in xrange(max(self.line_styles) + 1):
+                if index in self.line_styles:
+                    values = self.line_styles[index]
+                else:
+                    values = ('1', )
+                style.append(','.join(values))
+            url_bits.append('chls=%s' % '|'.join(style))
+        if self.grid:
+            url_bits.append('chg=%s' % self.grid)
         return url_bits
 
     # Downloading
@@ -353,7 +381,7 @@ class Chart(object):
             self.title = None
 
     def set_legend(self, legend):
-        # legend needs to be a list, tuple or None
+        """legend needs to be a list, tuple or None"""
         assert(isinstance(legend, list) or isinstance(legend, tuple) or
             legend is None)
         if legend:
@@ -378,7 +406,7 @@ class Chart(object):
     # -------------------------------------------------------------------------
 
     def fill_solid(self, area, colour):
-        assert(area in (Chart.BACKGROUND, Chart.CHART))
+        assert(area in Chart.VALID_SOLID_FILL_TYPES)
         _check_colour(colour)
         self.fill_area[area] = colour
         self.fill_types[area] = Chart.SOLID
@@ -397,20 +425,20 @@ class Chart(object):
         return args
 
     def fill_linear_gradient(self, area, angle, *args):
-        assert(area in (Chart.BACKGROUND, Chart.CHART))
+        assert(area in Chart.VALID_SOLID_FILL_TYPES)
         args = self._check_fill_linear(angle, *args)
         self.fill_types[area] = Chart.LINEAR_GRADIENT
         self.fill_area[area] = ','.join([str(angle)] + args)
 
     def fill_linear_stripes(self, area, angle, *args):
-        assert(area in (Chart.BACKGROUND, Chart.CHART))
+        assert(area in Chart.VALID_SOLID_FILL_TYPES)
         args = self._check_fill_linear(angle, *args)
         self.fill_types[area] = Chart.LINEAR_STRIPES
         self.fill_area[area] = ','.join([str(angle)] + args)
 
     def fill_to_url(self):
         areas = []
-        for area in (Chart.BACKGROUND, Chart.CHART):
+        for area in (Chart.BACKGROUND, Chart.CHART, Chart.ALPHA):
             if self.fill_types[area]:
                 areas.append('%s,%s,%s' % (area, self.fill_types[area], \
                     self.fill_area[area]))
@@ -436,13 +464,11 @@ class Chart(object):
             # simple encoding. I've found that this isn't sufficient,
             # e.g. examples/line-xy-circle.png. Let's try 100px.
             return SimpleData
-        elif self.height < 500:
-            return TextData
         else:
             return ExtendedData
 
     def data_x_range(self):
-        """Return a 2-tuple giving the minimum and maximum x-axis 
+        """Return a 2-tuple giving the minimum and maximum x-axis
         data range.
         """
         try:
@@ -455,7 +481,7 @@ class Chart(object):
             return None     # no x-axis datasets
 
     def data_y_range(self):
-        """Return a 2-tuple giving the minimum and maximum y-axis 
+        """Return a 2-tuple giving the minimum and maximum y-axis
         data range.
         """
         try:
@@ -523,6 +549,10 @@ class Chart(object):
         else:
             data = self.data
         return repr(data_class(data))
+
+    def annotated_data(self):
+        for dataset in self.data:
+            yield ('x', dataset)
 
     # Axis Labels
     # -------------------------------------------------------------------------
@@ -594,9 +624,9 @@ class Chart(object):
     def markers_to_url(self):
         return 'chm=%s' % '|'.join([','.join(a) for a in self.markers])
 
-    def add_marker(self, index, point, marker_type, colour, size):
+    def add_marker(self, index, point, marker_type, colour, size, priority=0):
         self.markers.append((marker_type, colour, str(index), str(point), \
-            str(size)))
+            str(size), str(priority)))
 
     def add_horizontal_range(self, colour, start, stop):
         self.markers.append(('r', colour, '1', str(start), str(stop)))
@@ -610,6 +640,26 @@ class Chart(object):
 
     def add_fill_simple(self, colour):
         self.markers.append(('B', colour, '1', '1', '1'))
+
+    # Line styles
+    # -------------------------------------------------------------------------
+
+    def set_line_style(self, index, thickness=1, line_segment=None, \
+            blank_segment=None):
+        value = []
+        value.append(str(thickness))
+        if line_segment:
+            value.append(str(line_segment))
+            value.append(str(blank_segment))
+        self.line_styles[index] = value
+
+    # Grid
+    # -------------------------------------------------------------------------
+
+    def set_grid(self, x_step, y_step, line_segment=1, \
+            blank_segment=0):
+        self.grid = '%s,%s,%s,%s' % (x_step, y_step, line_segment, \
+            blank_segment)
 
 
 class ScatterChart(Chart):
@@ -630,38 +680,10 @@ class LineChart(Chart):
     def __init__(self, *args, **kwargs):
         assert(type(self) != LineChart)  # This is an abstract class
         Chart.__init__(self, *args, **kwargs)
-        self.line_styles = {}
-        self.grid = None
 
-    def set_line_style(self, index, thickness=1, line_segment=None, \
-            blank_segment=None):
-        value = []
-        value.append(str(thickness))
-        if line_segment:
-            value.append(str(line_segment))
-            value.append(str(blank_segment))
-        self.line_styles[index] = value
-
-    def set_grid(self, x_step, y_step, line_segment=1, \
-            blank_segment=0):
-        self.grid = '%s,%s,%s,%s' % (x_step, y_step, line_segment, \
-            blank_segment)
-
-    def get_url_bits(self):
-        url_bits = Chart.get_url_bits(self)
-        if self.line_styles:
-            style = []
-            # for index, values in self.line_style.items():
-            for index in xrange(max(self.line_styles) + 1):
-                if index in self.line_styles:
-                    values = self.line_styles[index]
-                else:
-                    values = ('1', )
-                style.append(','.join(values))
-            url_bits.append('chls=%s' % '|'.join(style))
-        if self.grid:
-            url_bits.append('chg=%s' % self.grid)
-        return url_bits
+#    def get_url_bits(self, data_class=None):
+#        url_bits = Chart.get_url_bits(self, data_class=data_class)
+#        return url_bits
 
 
 class SimpleLineChart(LineChart):
@@ -673,6 +695,11 @@ class SimpleLineChart(LineChart):
         # All datasets are y-axis data.
         for dataset in self.data:
             yield ('y', dataset)
+
+class SparkLineChart(SimpleLineChart):
+
+    def type_to_url(self):
+        return 'cht=ls'
 
 class XYLineChart(LineChart):
 
@@ -693,14 +720,26 @@ class BarChart(Chart):
         assert(type(self) != BarChart)  # This is an abstract class
         Chart.__init__(self, *args, **kwargs)
         self.bar_width = None
+        self.zero_lines = {}
 
     def set_bar_width(self, bar_width):
         self.bar_width = bar_width
 
-    def get_url_bits(self):
-        url_bits = Chart.get_url_bits(self)
-        if self.bar_width is not None:
+    def set_zero_line(self, index, zero_line):
+        self.zero_lines[index] = zero_line
+
+    def get_url_bits(self, data_class=None, skip_chbh=False):
+        url_bits = Chart.get_url_bits(self, data_class=data_class)
+        if not skip_chbh and self.bar_width is not None:
             url_bits.append('chbh=%i' % self.bar_width)
+        zero_line = []
+        if self.zero_lines:
+            for index in xrange(max(self.zero_lines) + 1):
+                if index in self.zero_lines:
+                    zero_line.append(str(self.zero_lines[index]))
+                else:
+                    zero_line.append('0')
+            url_bits.append('chp=%s' % ','.join(zero_line))
         return url_bits
 
 
@@ -709,9 +748,6 @@ class StackedHorizontalBarChart(BarChart):
     def type_to_url(self):
         return 'cht=bhs'
 
-    def annotated_data(self):
-        for dataset in self.data:
-            yield ('x', dataset)
 
 class StackedVerticalBarChart(BarChart):
 
@@ -739,10 +775,11 @@ class GroupedBarChart(BarChart):
         """Set spacing between groups of bars."""
         self.group_spacing = spacing
 
-    def get_url_bits(self):
+    def get_url_bits(self, data_class=None):
         # Skip 'BarChart.get_url_bits' and call Chart directly so the parent
         # doesn't add "chbh" before we do.
-        url_bits = Chart.get_url_bits(self)
+        url_bits = BarChart.get_url_bits(self, data_class=data_class,
+            skip_chbh=True)
         if self.group_spacing is not None:
             if self.bar_spacing is None:
                 raise InvalidParametersException('Bar spacing is required to ' \
@@ -757,7 +794,7 @@ class GroupedBarChart(BarChart):
                 raise InvalidParametersException('Bar width is required to ' \
                     'be set when setting bar spacing')
             url_bits.append('chbh=%i,%i' % (self.bar_width, self.bar_spacing))
-        else:
+        elif self.bar_width:
             url_bits.append('chbh=%i' % self.bar_width)
         return url_bits
 
@@ -766,10 +803,6 @@ class GroupedHorizontalBarChart(GroupedBarChart):
 
     def type_to_url(self):
         return 'cht=bhg'
-
-    def annotated_data(self):
-        for dataset in self.data:
-            yield ('x', dataset)
 
 
 class GroupedVerticalBarChart(GroupedBarChart):
@@ -792,8 +825,8 @@ class PieChart(Chart):
     def set_pie_labels(self, labels):
         self.pie_labels = [urllib.quote(a) for a in labels]
 
-    def get_url_bits(self):
-        url_bits = Chart.get_url_bits(self)
+    def get_url_bits(self, data_class=None):
+        url_bits = Chart.get_url_bits(self, data_class=data_class)
         if self.pie_labels:
             url_bits.append('chl=%s' % '|'.join(self.pie_labels))
         return url_bits
@@ -827,58 +860,107 @@ class VennChart(Chart):
             yield ('y', dataset)
 
 
+class RadarChart(Chart):
+
+    def type_to_url(self):
+        return 'cht=r'
+
+class SplineRadarChart(RadarChart):
+
+    def type_to_url(self):
+        return 'cht=rs'
+
+
+class MapChart(Chart):
+
+    def __init__(self, *args, **kwargs):
+        Chart.__init__(self, *args, **kwargs)
+        self.geo_area = 'world'
+        self.codes = []
+
+    def type_to_url(self):
+        return 'cht=t'
+
+    def set_codes(self, codes):
+        self.codes = codes
+
+    def get_url_bits(self, data_class=None):
+        url_bits = Chart.get_url_bits(self, data_class=data_class)
+        url_bits.append('chtm=%s' % self.geo_area)
+        if self.codes:
+            url_bits.append('chld=%s' % ''.join(self.codes))
+        return url_bits
+
+
+class GoogleOMeterChart(PieChart):
+    """Inheriting from PieChart because of similar labeling"""
+
+    def type_to_url(self):
+        return 'cht=gom'
+
+
 def test():
-    chart = GroupedVerticalBarChart(320, 200)
     chart = PieChart2D(320, 200)
     chart = ScatterChart(320, 200)
     chart = SimpleLineChart(320, 200)
-    sine_data = [math.sin(float(a) / 10) * 2000 + 2000 for a in xrange(100)]
-    random_data = [a * random.random() * 30 for a in xrange(40)]
-    random_data2 = [random.random() * 4000 for a in xrange(10)]
+    chart = GroupedVerticalBarChart(320, 200)
+#    chart = SplineRadarChart(500, 500)
+#    chart = MapChart(440, 220)
+#    chart = GoogleOMeterChart(440, 220, x_range=(0, 100))
+    sine_data = [math.sin(float(a) / math.pi) * 100 for a in xrange(100)]
+    random_data = [random.random() * 100 for a in xrange(100)]
+    random_data2 = [random.random() * 50 for a in xrange(100)]
 #    chart.set_bar_width(50)
 #    chart.set_bar_spacing(0)
     chart.add_data(sine_data)
     chart.add_data(random_data)
-    chart.add_data(random_data2)
-#    chart.set_line_style(1, thickness=2)
-#    chart.set_line_style(2, line_segment=10, blank_segment=5)
-#    chart.set_title('heloooo')
+    chart.set_zero_line(1, .5)
+#    chart.add_data(random_data2)
+#    chart.set_line_style(0, thickness=5)
+#    chart.set_line_style(1, thickness=2, line_segment=10, blank_segment=5)
+#    chart.set_title('heloooo weeee')
 #    chart.set_legend(('sine wave', 'random * x'))
-#    chart.set_colours(('ee2000', 'DDDDAA', 'fF03f2'))
-#    chart.fill_solid(Chart.BACKGROUND, '123456')
-#    chart.fill_linear_gradient(Chart.CHART, 20, '004070', 1, '300040', 0,
-#        'aabbcc00', 0.5)
+    chart.set_colours(('ee2000', 'DDDDAA', 'fF03f2'))
+#    chart.fill_solid(Chart.ALPHA, '123456')
+#    chart.fill_linear_gradient(Chart.ALPHA, 20, '004070', 1, '300040', 0,
+#        'aabbcc55', 0.5)
 #    chart.fill_linear_stripes(Chart.CHART, 20, '204070', .2, '300040', .2,
 #        'aabbcc00', 0.2)
-    axis_left_index = chart.set_axis_range(Axis.LEFT, 0, 10)
-    axis_left_index = chart.set_axis_range(Axis.LEFT, 0, 10)
-    axis_left_index = chart.set_axis_range(Axis.LEFT, 0, 10)
-    axis_right_index = chart.set_axis_range(Axis.RIGHT, 5, 30)
-    axis_bottom_index = chart.set_axis_labels(Axis.BOTTOM, [1, 25, 95])
-    chart.set_axis_positions(axis_bottom_index, [1, 25, 95])
-    chart.set_axis_style(axis_bottom_index, '003050', 15)
+#    axis_left_index = chart.set_axis_range(Axis.LEFT, 0, 10)
+#    axis_right_index = chart.set_axis_range(Axis.RIGHT, 5, 30)
+#    axis_bottom_index = chart.set_axis_labels(Axis.BOTTOM, [1, 25, 95])
+#    chart.set_axis_positions(axis_bottom_index, [1, 25, 95])
+#    chart.set_axis_style(axis_bottom_index, '003050', 15)
 
 #    chart.set_pie_labels(('apples', 'oranges', 'bananas'))
 
 #    chart.set_grid(10, 10)
-
 #    for a in xrange(0, 100, 10):
 #        chart.add_marker(1, a, 'a', 'AACA20', 10)
 
-    chart.add_horizontal_range('00A020', .2, .5)
-    chart.add_vertical_range('00c030', .2, .4)
+#    chart.add_horizontal_range('00A020', .2, .5)
+#    chart.add_vertical_range('00c030', .2, .4)
 
-    chart.add_fill_simple('303030A0')
+#    chart.add_fill_simple('303030A0')
 
-    chart.download('test.png')
+#    chart.set_codes(['AU', 'AT', 'US'])
+#    chart.add_data([1,2,3])
+#    chart.set_colours(('EEEEEE', '000000', '00FF00'))
+
+#    chart.add_data([50,75])
+#    chart.set_pie_labels(('apples', 'oranges'))
 
     url = chart.get_url()
     print url
-    if 0:
+
+    chart.download('test.png')
+
+    if 1:
         data = urllib.urlopen(chart.get_url()).read()
         open('meh.png', 'wb').write(data)
-        os.system('start meh.png')
+        os.system('eog meh.png')
 
 
 if __name__ == '__main__':
     test()
+
