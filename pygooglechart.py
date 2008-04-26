@@ -624,9 +624,9 @@ class Chart(object):
     def markers_to_url(self):
         return 'chm=%s' % '|'.join([','.join(a) for a in self.markers])
 
-    def add_marker(self, index, point, marker_type, colour, size):
+    def add_marker(self, index, point, marker_type, colour, size, priority=0):
         self.markers.append((marker_type, colour, str(index), str(point), \
-            str(size)))
+            str(size), str(priority)))
 
     def add_horizontal_range(self, colour, start, stop):
         self.markers.append(('r', colour, '1', str(start), str(stop)))
