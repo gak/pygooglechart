@@ -311,6 +311,8 @@ class Chart(object):
         }
         self.axis = []
         self.markers = []
+        self.line_styles = {}
+        self.grid = None
 
     # URL generation
     # -------------------------------------------------------------------------
@@ -340,6 +342,17 @@ class Chart(object):
             url_bits.append(ret)
         if self.markers:
             url_bits.append(self.markers_to_url())
+        if self.line_styles:
+            style = []
+            for index in xrange(max(self.line_styles) + 1):
+                if index in self.line_styles:
+                    values = self.line_styles[index]
+                else:
+                    values = ('1', )
+                style.append(','.join(values))
+            url_bits.append('chls=%s' % '|'.join(style))
+        if self.grid:
+            url_bits.append('chg=%s' % self.grid)
         return url_bits
 
     # Downloading
@@ -620,6 +633,26 @@ class Chart(object):
     def add_fill_simple(self, colour):
         self.markers.append(('B', colour, '1', '1', '1'))
 
+    # Line styles
+    # -------------------------------------------------------------------------
+
+    def set_line_style(self, index, thickness=1, line_segment=None, \
+            blank_segment=None):
+        value = []
+        value.append(str(thickness))
+        if line_segment:
+            value.append(str(line_segment))
+            value.append(str(blank_segment))
+        self.line_styles[index] = value
+
+    # Grid
+    # -------------------------------------------------------------------------
+
+    def set_grid(self, x_step, y_step, line_segment=1, \
+            blank_segment=0):
+        self.grid = '%s,%s,%s,%s' % (x_step, y_step, line_segment, \
+            blank_segment)
+
 
 class ScatterChart(Chart):
 
@@ -639,37 +672,10 @@ class LineChart(Chart):
     def __init__(self, *args, **kwargs):
         assert(type(self) != LineChart)  # This is an abstract class
         Chart.__init__(self, *args, **kwargs)
-        self.line_styles = {}
-        self.grid = None
 
-    def set_line_style(self, index, thickness=1, line_segment=None, \
-            blank_segment=None):
-        value = []
-        value.append(str(thickness))
-        if line_segment:
-            value.append(str(line_segment))
-            value.append(str(blank_segment))
-        self.line_styles[index] = value
-
-    def set_grid(self, x_step, y_step, line_segment=1, \
-            blank_segment=0):
-        self.grid = '%s,%s,%s,%s' % (x_step, y_step, line_segment, \
-            blank_segment)
-
-    def get_url_bits(self, data_class=None):
-        url_bits = Chart.get_url_bits(self, data_class=data_class)
-        if self.line_styles:
-            style = []
-            for index in xrange(max(self.line_styles) + 1):
-                if index in self.line_styles:
-                    values = self.line_styles[index]
-                else:
-                    values = ('1', )
-                style.append(','.join(values))
-            url_bits.append('chls=%s' % '|'.join(style))
-        if self.grid:
-            url_bits.append('chg=%s' % self.grid)
-        return url_bits
+#    def get_url_bits(self, data_class=None):
+#        url_bits = Chart.get_url_bits(self, data_class=data_class)
+#        return url_bits
 
 
 class SimpleLineChart(LineChart):
@@ -770,7 +776,7 @@ class GroupedBarChart(BarChart):
                 raise InvalidParametersException('Bar width is required to ' \
                     'be set when setting bar spacing')
             url_bits.append('chbh=%i,%i' % (self.bar_width, self.bar_spacing))
-        else:
+        elif self.bar_width:
             url_bits.append('chbh=%i' % self.bar_width)
         return url_bits
 
@@ -851,31 +857,29 @@ class RadarChart(Chart):
 
 
 def test():
-    chart = GroupedVerticalBarChart(320, 200)
     chart = PieChart2D(320, 200)
     chart = ScatterChart(320, 200)
     chart = SimpleLineChart(320, 200)
+    chart = GroupedVerticalBarChart(320, 200)
     chart = RadarChart(500, 500)
-    sine_data = [math.sin(float(a) / 10) * 100 + 50 for a in xrange(100)]
+    sine_data = [math.sin(float(a) / math.pi) * 100 for a in xrange(100)]
     random_data = [random.random() * 100 for a in xrange(100)]
-    random_data2 = [random.random() * 4000 for a in xrange(10)]
+    random_data2 = [random.random() * 50 for a in xrange(100)]
 #    chart.set_bar_width(50)
 #    chart.set_bar_spacing(0)
     chart.add_data(sine_data)
     chart.add_data(random_data)
-#    chart.add_data(random_data2)
-#    chart.set_line_style(1, thickness=2)
-#    chart.set_line_style(2, line_segment=10, blank_segment=5)
-    chart.set_title('heloooo weeee')
-    chart.set_legend(('sine wave', 'random * x'))
+    chart.add_data(random_data2)
+#    chart.set_line_style(0, thickness=5)
+#    chart.set_line_style(1, thickness=2, line_segment=10, blank_segment=5)
+#    chart.set_title('heloooo weeee')
+#    chart.set_legend(('sine wave', 'random * x'))
     chart.set_colours(('ee2000', 'DDDDAA', 'fF03f2'))
 #    chart.fill_solid(Chart.BACKGROUND, '123456')
-    chart.fill_linear_gradient(Chart.CHART, 20, '004070', 1, '300040', 0,
-        'aabbcc00', 0.5)
+#    chart.fill_linear_gradient(Chart.CHART, 20, '004070', 1, '300040', 0,
+#        'aabbcc00', 0.5)
 #    chart.fill_linear_stripes(Chart.CHART, 20, '204070', .2, '300040', .2,
 #        'aabbcc00', 0.2)
-    axis_left_index = chart.set_axis_range(Axis.LEFT, 0, 10)
-#    axis_left_index = chart.set_axis_range(Axis.LEFT, 0, 10)
 #    axis_left_index = chart.set_axis_range(Axis.LEFT, 0, 10)
 #    axis_right_index = chart.set_axis_range(Axis.RIGHT, 5, 30)
 #    axis_bottom_index = chart.set_axis_labels(Axis.BOTTOM, [1, 25, 95])
@@ -885,7 +889,6 @@ def test():
 #    chart.set_pie_labels(('apples', 'oranges', 'bananas'))
 
 #    chart.set_grid(10, 10)
-
 #    for a in xrange(0, 100, 10):
 #        chart.add_marker(1, a, 'a', 'AACA20', 10)
 
