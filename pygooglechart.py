@@ -855,26 +855,56 @@ class RadarChart(Chart):
         for dataset in self.data:
             yield ('x', dataset)
 
+class SplineRadarChart(RadarChart):
+
+    def type_to_url(self):
+        return 'cht=rs'
+
+
+class MapChart(Chart):
+
+    def __init__(self, *args, **kwargs):
+        Chart.__init__(self, *args, **kwargs)
+        self.geo_area = 'world'
+        self.codes = []
+
+    def type_to_url(self):
+        return 'cht=t'
+
+    def set_codes(self, codes):
+        self.codes = codes
+
+    def get_url_bits(self, data_class=None):
+        url_bits = Chart.get_url_bits(self, data_class=data_class)
+        url_bits.append('chtm=%s' % self.geo_area)
+        if self.codes:
+            url_bits.append('chld=%s' % ''.join(self.codes))
+        return url_bits
+
+    def annotated_data(self):
+        for dataset in self.data:
+            yield ('x', dataset)
 
 def test():
     chart = PieChart2D(320, 200)
     chart = ScatterChart(320, 200)
     chart = SimpleLineChart(320, 200)
     chart = GroupedVerticalBarChart(320, 200)
-    chart = RadarChart(500, 500)
+    chart = SplineRadarChart(500, 500)
+    chart = MapChart(440, 220)
     sine_data = [math.sin(float(a) / math.pi) * 100 for a in xrange(100)]
     random_data = [random.random() * 100 for a in xrange(100)]
     random_data2 = [random.random() * 50 for a in xrange(100)]
 #    chart.set_bar_width(50)
 #    chart.set_bar_spacing(0)
-    chart.add_data(sine_data)
-    chart.add_data(random_data)
-    chart.add_data(random_data2)
+#    chart.add_data(sine_data)
+#    chart.add_data(random_data)
+#    chart.add_data(random_data2)
 #    chart.set_line_style(0, thickness=5)
 #    chart.set_line_style(1, thickness=2, line_segment=10, blank_segment=5)
 #    chart.set_title('heloooo weeee')
 #    chart.set_legend(('sine wave', 'random * x'))
-    chart.set_colours(('ee2000', 'DDDDAA', 'fF03f2'))
+#    chart.set_colours(('ee2000', 'DDDDAA', 'fF03f2'))
 #    chart.fill_solid(Chart.BACKGROUND, '123456')
 #    chart.fill_linear_gradient(Chart.CHART, 20, '004070', 1, '300040', 0,
 #        'aabbcc00', 0.5)
@@ -895,12 +925,16 @@ def test():
 #    chart.add_horizontal_range('00A020', .2, .5)
 #    chart.add_vertical_range('00c030', .2, .4)
 
-    chart.add_fill_simple('303030A0')
+#    chart.add_fill_simple('303030A0')
+
+    chart.set_codes(['AU', 'AT', 'US'])
+    chart.add_data([1,2,3])
+    chart.set_colours(('EEEEEE', '000000', '00FF00'))
+    url = chart.get_url()
+    print url
 
     chart.download('test.png')
 
-    url = chart.get_url()
-    print url
     if 1:
         data = urllib.urlopen(chart.get_url()).read()
         open('meh.png', 'wb').write(data)
