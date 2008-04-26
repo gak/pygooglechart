@@ -660,7 +660,6 @@ class LineChart(Chart):
         url_bits = Chart.get_url_bits(self, data_class=data_class)
         if self.line_styles:
             style = []
-            # for index, values in self.line_style.items():
             for index in xrange(max(self.line_styles) + 1):
                 if index in self.line_styles:
                     values = self.line_styles[index]
@@ -841,36 +840,47 @@ class VennChart(Chart):
             yield ('y', dataset)
 
 
+class RadarChart(Chart):
+
+    def type_to_url(self):
+        return 'cht=r'
+
+    def annotated_data(self):
+        for dataset in self.data:
+            yield ('x', dataset)
+
+
 def test():
     chart = GroupedVerticalBarChart(320, 200)
     chart = PieChart2D(320, 200)
     chart = ScatterChart(320, 200)
     chart = SimpleLineChart(320, 200)
-    sine_data = [math.sin(float(a) / 10) * 2000 + 2000 for a in xrange(100)]
-    random_data = [a * random.random() * 30 for a in xrange(40)]
+    chart = RadarChart(500, 500)
+    sine_data = [math.sin(float(a) / 10) * 100 + 50 for a in xrange(100)]
+    random_data = [random.random() * 100 for a in xrange(100)]
     random_data2 = [random.random() * 4000 for a in xrange(10)]
 #    chart.set_bar_width(50)
 #    chart.set_bar_spacing(0)
     chart.add_data(sine_data)
     chart.add_data(random_data)
-    chart.add_data(random_data2)
+#    chart.add_data(random_data2)
 #    chart.set_line_style(1, thickness=2)
 #    chart.set_line_style(2, line_segment=10, blank_segment=5)
-#    chart.set_title('heloooo')
-#    chart.set_legend(('sine wave', 'random * x'))
-#    chart.set_colours(('ee2000', 'DDDDAA', 'fF03f2'))
+    chart.set_title('heloooo weeee')
+    chart.set_legend(('sine wave', 'random * x'))
+    chart.set_colours(('ee2000', 'DDDDAA', 'fF03f2'))
 #    chart.fill_solid(Chart.BACKGROUND, '123456')
-#    chart.fill_linear_gradient(Chart.CHART, 20, '004070', 1, '300040', 0,
-#        'aabbcc00', 0.5)
+    chart.fill_linear_gradient(Chart.CHART, 20, '004070', 1, '300040', 0,
+        'aabbcc00', 0.5)
 #    chart.fill_linear_stripes(Chart.CHART, 20, '204070', .2, '300040', .2,
 #        'aabbcc00', 0.2)
     axis_left_index = chart.set_axis_range(Axis.LEFT, 0, 10)
-    axis_left_index = chart.set_axis_range(Axis.LEFT, 0, 10)
-    axis_left_index = chart.set_axis_range(Axis.LEFT, 0, 10)
-    axis_right_index = chart.set_axis_range(Axis.RIGHT, 5, 30)
-    axis_bottom_index = chart.set_axis_labels(Axis.BOTTOM, [1, 25, 95])
-    chart.set_axis_positions(axis_bottom_index, [1, 25, 95])
-    chart.set_axis_style(axis_bottom_index, '003050', 15)
+#    axis_left_index = chart.set_axis_range(Axis.LEFT, 0, 10)
+#    axis_left_index = chart.set_axis_range(Axis.LEFT, 0, 10)
+#    axis_right_index = chart.set_axis_range(Axis.RIGHT, 5, 30)
+#    axis_bottom_index = chart.set_axis_labels(Axis.BOTTOM, [1, 25, 95])
+#    chart.set_axis_positions(axis_bottom_index, [1, 25, 95])
+#    chart.set_axis_style(axis_bottom_index, '003050', 15)
 
 #    chart.set_pie_labels(('apples', 'oranges', 'bananas'))
 
@@ -879,8 +889,8 @@ def test():
 #    for a in xrange(0, 100, 10):
 #        chart.add_marker(1, a, 'a', 'AACA20', 10)
 
-    chart.add_horizontal_range('00A020', .2, .5)
-    chart.add_vertical_range('00c030', .2, .4)
+#    chart.add_horizontal_range('00A020', .2, .5)
+#    chart.add_vertical_range('00c030', .2, .4)
 
     chart.add_fill_simple('303030A0')
 
@@ -888,11 +898,12 @@ def test():
 
     url = chart.get_url()
     print url
-    if 0:
+    if 1:
         data = urllib.urlopen(chart.get_url()).read()
         open('meh.png', 'wb').write(data)
-        os.system('start meh.png')
+        os.system('eog meh.png')
 
 
 if __name__ == '__main__':
     test()
+
