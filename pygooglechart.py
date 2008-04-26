@@ -79,6 +79,28 @@ class Data(object):
         assert(type(self) != Data)  # This is an abstract class
         self.data = data
 
+    @classmethod
+    def float_scale_value(cls, value, range):
+        lower, upper = range
+        max_value = cls.max_value()
+        scaled = (value-lower) * (float(max_value)/(upper-lower))
+        return scaled
+
+    @classmethod
+    def clip_value(cls, value):
+        clipped = max(0, min(value, cls.max_value()))
+        return clipped
+
+    @classmethod
+    def int_scale_value(cls, value, range):
+        scaled = int(round(cls.float_scale_value(value, range)))
+        return scaled
+
+    @classmethod
+    def scale_value(cls, value, range):
+        scaled = cls.int_scale_value(value, range)
+        clipped = cls.clip_value(scaled)
+        return clipped
 
 class SimpleData(Data):
     enc_map = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
@@ -102,14 +124,6 @@ class SimpleData(Data):
     @staticmethod
     def max_value():
         return 61
-
-    @classmethod
-    def scale_value(cls, value, range):
-        lower, upper = range
-        max_value = cls.max_value()
-        scaled = int(round((float(value) - lower) * max_value / upper))
-        clipped = max(0, min(scaled, max_value))
-        return clipped
 
 class TextData(Data):
 
@@ -143,6 +157,13 @@ class TextData(Data):
         else:
             return lower
 
+    @classmethod
+    def scale_value(cls, value, range):
+        # use float values instead of integers because we don't need an encode
+        # map index
+        scaled = cls.float_scale_value(value,range)
+        clipped = cls.clip_value(scaled)
+        return clipped
 
 class ExtendedData(Data):
     enc_map = \
@@ -172,14 +193,6 @@ class ExtendedData(Data):
     @staticmethod
     def max_value():
         return 4095
-
-    @classmethod
-    def scale_value(cls, value, range):
-        lower, upper = range
-        max_value = cls.max_value()
-        scaled = int(round((float(value) - lower) * max_value / upper))
-        clipped = max(0, min(scaled, max_value))
-        return clipped
 
 
 # Axis Classes
@@ -302,16 +315,16 @@ class Chart(object):
     # URL generation
     # -------------------------------------------------------------------------
 
-    def get_url(self):
-        url_bits = self.get_url_bits()
+    def get_url(self, data_class=None):
+        url_bits = self.get_url_bits(data_class=data_class)
         return self.BASE_URL + '&'.join(url_bits)
 
-    def get_url_bits(self):
+    def get_url_bits(self, data_class=None):
         url_bits = []
         # required arguments
         url_bits.append(self.type_to_url())
         url_bits.append('chs=%ix%i' % (self.width, self.height))
-        url_bits.append(self.data_to_url())
+        url_bits.append(self.data_to_url(data_class=data_class))
         # optional arguments
         if self.title:
             url_bits.append('chtt=%s' % self.title)
@@ -434,8 +447,6 @@ class Chart(object):
             # simple encoding. I've found that this isn't sufficient,
             # e.g. examples/line-xy-circle.png. Let's try 100px.
             return SimpleData
-        elif self.height < 500:
-            return TextData
         else:
             return ExtendedData
 
@@ -645,8 +656,8 @@ class LineChart(Chart):
         self.grid = '%s,%s,%s,%s' % (x_step, y_step, line_segment, \
             blank_segment)
 
-    def get_url_bits(self):
-        url_bits = Chart.get_url_bits(self)
+    def get_url_bits(self, data_class=None):
+        url_bits = Chart.get_url_bits(self, data_class=data_class)
         if self.line_styles:
             style = []
             # for index, values in self.line_style.items():
@@ -700,8 +711,8 @@ class BarChart(Chart):
     def set_bar_width(self, bar_width):
         self.bar_width = bar_width
 
-    def get_url_bits(self):
-        url_bits = Chart.get_url_bits(self)
+    def get_url_bits(self, data_class=None):
+        url_bits = Chart.get_url_bits(self, data_class=data_class)
         if self.bar_width is not None:
             url_bits.append('chbh=%i' % self.bar_width)
         return url_bits
@@ -742,10 +753,10 @@ class GroupedBarChart(BarChart):
         """Set spacing between groups of bars."""
         self.group_spacing = spacing
 
-    def get_url_bits(self):
+    def get_url_bits(self, data_class=None):
         # Skip 'BarChart.get_url_bits' and call Chart directly so the parent
         # doesn't add "chbh" before we do.
-        url_bits = Chart.get_url_bits(self)
+        url_bits = Chart.get_url_bits(self, data_class=data_class)
         if self.group_spacing is not None:
             if self.bar_spacing is None:
                 raise InvalidParametersException('Bar spacing is required to ' \
@@ -795,8 +806,8 @@ class PieChart(Chart):
     def set_pie_labels(self, labels):
         self.pie_labels = [urllib.quote(a) for a in labels]
 
-    def get_url_bits(self):
-        url_bits = Chart.get_url_bits(self)
+    def get_url_bits(self, data_class=None):
+        url_bits = Chart.get_url_bits(self, data_class=data_class)
         if self.pie_labels:
             url_bits.append('chl=%s' % '|'.join(self.pie_labels))
         return url_bits
