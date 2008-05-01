@@ -30,7 +30,7 @@ import re
 # Helper variables and functions
 # -----------------------------------------------------------------------------
 
-__version__ = '0.2.0'
+__version__ = '0.2.1'
 
 reo_colour = re.compile('^([A-Fa-f0-9]{2,2}){3,4}$')
 
@@ -102,7 +102,9 @@ class Data(object):
         clipped = cls.clip_value(scaled)
         return clipped
 
+
 class SimpleData(Data):
+
     enc_map = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
 
     def __repr__(self):
@@ -124,6 +126,7 @@ class SimpleData(Data):
     @staticmethod
     def max_value():
         return 61
+
 
 class TextData(Data):
 
@@ -161,9 +164,10 @@ class TextData(Data):
     def scale_value(cls, value, range):
         # use float values instead of integers because we don't need an encode
         # map index
-        scaled = cls.float_scale_value(value,range)
+        scaled = cls.float_scale_value(value, range)
         clipped = cls.clip_value(scaled)
         return clipped
+
 
 class ExtendedData(Data):
     enc_map = \
@@ -559,7 +563,7 @@ class Chart(object):
 
     def set_axis_labels(self, axis_type, values):
         assert(axis_type in Axis.TYPES)
-        values = [ urllib.quote(a) for a in values ]
+        values = [urllib.quote(a) for a in values]
         axis_index = len(self.axis)
         axis = LabelAxis(axis_index, axis_type, values)
         self.axis.append(axis)
@@ -675,15 +679,12 @@ class ScatterChart(Chart):
             # markers.
             yield ('marker-size', self.data[2])
 
+
 class LineChart(Chart):
 
     def __init__(self, *args, **kwargs):
         assert(type(self) != LineChart)  # This is an abstract class
         Chart.__init__(self, *args, **kwargs)
-
-#    def get_url_bits(self, data_class=None):
-#        url_bits = Chart.get_url_bits(self, data_class=data_class)
-#        return url_bits
 
 
 class SimpleLineChart(LineChart):
@@ -696,10 +697,12 @@ class SimpleLineChart(LineChart):
         for dataset in self.data:
             yield ('y', dataset)
 
+
 class SparkLineChart(SimpleLineChart):
 
     def type_to_url(self):
         return 'cht=ls'
+
 
 class XYLineChart(LineChart):
 
@@ -713,6 +716,7 @@ class XYLineChart(LineChart):
                 yield ('x', dataset)
             else:
                 yield ('y', dataset)
+
 
 class BarChart(Chart):
 
@@ -782,8 +786,8 @@ class GroupedBarChart(BarChart):
             skip_chbh=True)
         if self.group_spacing is not None:
             if self.bar_spacing is None:
-                raise InvalidParametersException('Bar spacing is required to ' \
-                    'be set when setting group spacing')
+                raise InvalidParametersException('Bar spacing is required ' \
+                    'to be set when setting group spacing')
             if self.bar_width is None:
                 raise InvalidParametersException('Bar width is required to ' \
                     'be set when setting bar spacing')
@@ -864,6 +868,7 @@ class RadarChart(Chart):
 
     def type_to_url(self):
         return 'cht=r'
+
 
 class SplineRadarChart(RadarChart):
 
@@ -963,4 +968,3 @@ def test():
 
 if __name__ == '__main__':
     test()
-
