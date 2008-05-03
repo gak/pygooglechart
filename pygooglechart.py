@@ -26,6 +26,8 @@ import urllib2
 import math
 import random
 import re
+import warnings
+import copy
 
 # Helper variables and functions
 # -----------------------------------------------------------------------------
@@ -40,6 +42,14 @@ def _check_colour(colour):
         raise InvalidParametersException('Colours need to be in ' \
             'RRGGBB or RRGGBBAA format. One of your colours has %s' % \
             colour)
+
+
+def _reset_warnings():
+    """Helper function to reset all warnings. Used by the unit tests."""
+    globals()['__warningregistry__'] = None
+#def _warn(message):
+#    warnings.warn_explicit(msg, warnings.UserWarning,
+
 
 # Exception Classes
 # -----------------------------------------------------------------------------
@@ -92,13 +102,12 @@ class Data(object):
     def float_scale_value(cls, value, range):
         lower, upper = range
         assert(upper > lower)
-        max_value = cls.max_value()
-        scaled = (value-lower) * (float(max_value) / (upper - lower))
+        scaled = (value - lower) * (float(cls.max_value) / (upper - lower))
         return scaled
 
     @classmethod
     def clip_value(cls, value):
-        return max(0, min(value, cls.max_value()))
+        return max(0, min(value, cls.max_value))
 
     @classmethod
     def int_scale_value(cls, value, range):
@@ -108,22 +117,25 @@ class Data(object):
     def scale_value(cls, value, range):
         scaled = cls.int_scale_value(value, range)
         clipped = cls.clip_value(scaled)
+        if clipped != scaled:
+            warnings.warn('One or more of of your data points has been '
+                'clipped because it is out of range.')
         return clipped
 
 
 class SimpleData(Data):
 
+    max_value = 61
     enc_map = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
 
     def __repr__(self):
-        max_value = self.max_value()
         encoded_data = []
         for data in self.data:
             sub_data = []
             for value in data:
                 if value is None:
                     sub_data.append('_')
-                elif value >= 0 and value <= max_value:
+                elif value >= 0 and value <= self.max_value:
                     sub_data.append(SimpleData.enc_map[value])
                 else:
                     raise DataOutOfRangeException('cannot encode value: %d'
@@ -131,31 +143,24 @@ class SimpleData(Data):
             encoded_data.append(''.join(sub_data))
         return 'chd=s:' + ','.join(encoded_data)
 
-    @staticmethod
-    def max_value():
-        return 61
-
 
 class TextData(Data):
 
+    max_value = 100
+
     def __repr__(self):
-        max_value = self.max_value()
         encoded_data = []
         for data in self.data:
             sub_data = []
             for value in data:
                 if value is None:
                     sub_data.append(-1)
-                elif value >= 0 and value <= max_value:
+                elif value >= 0 and value <= self.max_value:
                     sub_data.append("%.1f" % float(value))
                 else:
                     raise DataOutOfRangeException()
             encoded_data.append(','.join(sub_data))
         return 'chd=t:' + '|'.join(encoded_data)
-
-    @staticmethod
-    def max_value():
-        return 100
 
     @classmethod
     def scale_value(cls, value, range):
@@ -168,11 +173,11 @@ class TextData(Data):
 
 class ExtendedData(Data):
 
+    max_value = 4095
     enc_map = \
         'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-.'
 
     def __repr__(self):
-        max_value = self.max_value()
         encoded_data = []
         enc_size = len(ExtendedData.enc_map)
         for data in self.data:
@@ -180,7 +185,7 @@ class ExtendedData(Data):
             for value in data:
                 if value is None:
                     sub_data.append('__')
-                elif value >= 0 and value <= max_value:
+                elif value >= 0 and value <= self.max_value:
                     first, second = divmod(int(value), enc_size)
                     sub_data.append('%s%s' % (
                         ExtendedData.enc_map[first],
@@ -191,10 +196,6 @@ class ExtendedData(Data):
                         value))
             encoded_data.append(''.join(sub_data))
         return 'chd=e:' + ','.join(encoded_data)
-
-    @staticmethod
-    def max_value():
-        return 4095
 
 
 # Axis Classes
@@ -287,7 +288,7 @@ class Chart(object):
     LINEAR_STRIPES = 'ls'
 
     def __init__(self, width, height, title=None, legend=None, colours=None,
-                 auto_scale=True, x_range=None, y_range=None):
+            auto_scale=True, x_range=None, y_range=None):
         if type(self) == Chart:
             raise AbstractClassException('This is an abstract class')
         assert(isinstance(width, int))
@@ -300,9 +301,9 @@ class Chart(object):
         self.set_colours(colours)
 
         # Data for scaling.
-        self.auto_scale = auto_scale    # Whether to automatically scale data
-        self.x_range = x_range          # (min, max) x-axis range for scaling
-        self.y_range = y_range          # (min, max) y-axis range for scaling
+        self.auto_scale = auto_scale  # Whether to automatically scale data
+        self.x_range = x_range  # (min, max) x-axis range for scaling
+        self.y_range = y_range  # (min, max) y-axis range for scaling
         self.scaled_data_class = None
         self.scaled_x_range = None
         self.scaled_y_range = None
@@ -549,7 +550,6 @@ class Chart(object):
         if not issubclass(data_class, Data):
             raise UnknownDataTypeException()
         if self.auto_scale:
-            print data_class
             data = self.scaled_data(data_class, self.x_range, self.y_range)
         else:
             data = self.data
@@ -830,6 +830,9 @@ class PieChart(Chart):
             raise AbstractClassException('This is an abstract class')
         Chart.__init__(self, *args, **kwargs)
         self.pie_labels = []
+        if self.y_range:
+            warnings.warn('y_range is not used with %s.' % \
+                (self.__class__.__name__))
 
     def set_pie_labels(self, labels):
         self.pie_labels = [urllib.quote(a) for a in labels]
@@ -844,7 +847,7 @@ class PieChart(Chart):
         # Datasets are all y-axis data. However, there should only be
         # one dataset for pie charts.
         for dataset in self.data:
-            yield ('y', dataset)
+            yield ('x', dataset)
 
 
 class PieChart2D(PieChart):
@@ -905,40 +908,77 @@ class MapChart(Chart):
 class GoogleOMeterChart(PieChart):
     """Inheriting from PieChart because of similar labeling"""
 
+    def __init__(self, *args, **kwargs):
+        PieChart.__init__(self, *args, **kwargs)
+        if self.auto_scale and not self.x_range:
+            warnings.warn('Please specify an x_range with GoogleOMeterChart, '
+                'otherwise one arrow will always be at the max.')
+
     def type_to_url(self):
         return 'cht=gom'
 
 
 class ChartGrammar(object):
 
-    def __init__(self, grammar):
+    def __init__(self):
+        self.grammar = None
+        self.chart = None
+
+    def parse(self, grammar):
         self.grammar = grammar
         self.chart = self.create_chart_instance()
+
+        for attr in self.grammar:
+            if attr in ('w', 'h', 'type', 'auto_scale', 'x_range', 'y_range'):
+                continue  # These are already parsed in create_chart_instance
+            attr_func = 'parse_' + attr
+            if not hasattr(self, attr_func):
+                warnings.warn('No parser for grammar attribute "%s"' % (attr))
+                continue
+            getattr(self, attr_func)(grammar[attr])
+
+        return self.chart
+
+    def parse_data(self, data):
+        self.chart.data = data
+        print self.chart.data
 
     @staticmethod
     def get_possible_chart_types():
         possible_charts = []
-        for cls_name in globals():
+        for cls_name in globals().keys():
             if not cls_name.endswith('Chart'):
                 continue
             cls = globals()[cls_name]
             # Check if it is an abstract class
             try:
-                cls(1, 1)
+                a = cls(1, 1, auto_scale=False)
+                del a
             except AbstractClassException:
                 continue
             # Strip off "Class"
             possible_charts.append(cls_name[:-5])
         return possible_charts
 
-    def create_chart_instance(self):
+    def create_chart_instance(self, grammar=None):
+        if not grammar:
+            grammar = self.grammar
+        assert(isinstance(grammar, dict))  # grammar must be a dict
         assert('w' in grammar)  # width is required
         assert('h' in grammar)  # height is required
         assert('type' in grammar)  # type is required
+        chart_type = grammar['type']
+        w = grammar['w']
+        h = grammar['h']
+        auto_scale = grammar.get('auto_scale', None)
+        x_range = grammar.get('x_range', None)
+        y_range = grammar.get('y_range', None)
         types = ChartGrammar.get_possible_chart_types()
-        if grammar['type'] not in types:
+        if chart_type not in types:
             raise UnknownChartType('%s is an unknown chart type. Possible '
-                'chart types are %s' % (grammar['type'], ','.join(types)))
+                'chart types are %s' % (chart_type, ','.join(types)))
+        return globals()[chart_type + 'Chart'](w, h, auto_scale=auto_scale,
+            x_range=x_range, y_range=y_range)
 
     def download(self):
         pass

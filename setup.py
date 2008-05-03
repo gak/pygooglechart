@@ -1,4 +1,5 @@
 from distutils.core import setup
+from setuptools import setup
 from pygooglechart import __version__
 
 setup(name='pygooglechart',
@@ -18,6 +19,6 @@ setup(name='pygooglechart',
         'Programming Language :: Python',
         'Topic :: Scientific/Engineering :: Visualization',
         'Topic :: Software Development :: Libraries :: Python Modules',
-        ]
-    )
+        ],
+)
 
