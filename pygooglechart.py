@@ -1,5 +1,5 @@
 """
-PyGoogleChart - A complete Python wrapper for the Google Chart API
+pygooglechart - A complete Python wrapper for the Google Chart API
 
 http://pygooglechart.slowchop.com/
 
@@ -31,9 +31,9 @@ import re
 # -----------------------------------------------------------------------------
 
 __version__ = '0.2.1'
+__author__ = 'Gerald Kaszuba'
 
 reo_colour = re.compile('^([A-Fa-f0-9]{2,2}){3,4}$')
-
 
 def _check_colour(colour):
     if not reo_colour.match(colour):
@@ -69,6 +69,14 @@ class BadContentTypeException(PyGoogleChartException):
     pass
 
 
+class AbstractClassException(PyGoogleChartException):
+    pass
+
+
+class UnknownChartType(PyGoogleChartException):
+    pass
+
+
 # Data Classes
 # -----------------------------------------------------------------------------
 
@@ -76,7 +84,8 @@ class BadContentTypeException(PyGoogleChartException):
 class Data(object):
 
     def __init__(self, data):
-        assert(type(self) != Data)  # This is an abstract class
+        if type(self) == Data:
+            raise AbstractClassException('This is an abstract class')
         self.data = data
 
     @classmethod
@@ -279,7 +288,8 @@ class Chart(object):
 
     def __init__(self, width, height, title=None, legend=None, colours=None,
                  auto_scale=True, x_range=None, y_range=None):
-        assert(type(self) != Chart)  # This is an abstract class
+        if type(self) == Chart:
+            raise AbstractClassException('This is an abstract class')
         assert(isinstance(width, int))
         assert(isinstance(height, int))
         self.width = width
@@ -674,7 +684,8 @@ class ScatterChart(Chart):
 class LineChart(Chart):
 
     def __init__(self, *args, **kwargs):
-        assert(type(self) != LineChart)  # This is an abstract class
+        if type(self) == LineChart:
+            raise AbstractClassException('This is an abstract class')
         Chart.__init__(self, *args, **kwargs)
 
 
@@ -712,7 +723,8 @@ class XYLineChart(LineChart):
 class BarChart(Chart):
 
     def __init__(self, *args, **kwargs):
-        assert(type(self) != BarChart)  # This is an abstract class
+        if type(self) == BarChart:
+            raise AbstractClassException('This is an abstract class')
         Chart.__init__(self, *args, **kwargs)
         self.bar_width = None
         self.zero_lines = {}
@@ -757,7 +769,8 @@ class StackedVerticalBarChart(BarChart):
 class GroupedBarChart(BarChart):
 
     def __init__(self, *args, **kwargs):
-        assert(type(self) != GroupedBarChart)  # This is an abstract class
+        if type(self) == GroupedBarChart:
+            raise AbstractClassException('This is an abstract class')
         BarChart.__init__(self, *args, **kwargs)
         self.bar_spacing = None
         self.group_spacing = None
@@ -813,7 +826,8 @@ class GroupedVerticalBarChart(GroupedBarChart):
 class PieChart(Chart):
 
     def __init__(self, *args, **kwargs):
-        assert(type(self) != PieChart)  # This is an abstract class
+        if type(self) == PieChart:
+            raise AbstractClassException('This is an abstract class')
         Chart.__init__(self, *args, **kwargs)
         self.pie_labels = []
 
@@ -895,67 +909,37 @@ class GoogleOMeterChart(PieChart):
         return 'cht=gom'
 
 
-def test():
-    chart = PieChart2D(320, 200)
-    chart = ScatterChart(320, 200)
-    chart = SimpleLineChart(320, 200)
-    chart = GroupedVerticalBarChart(320, 200)
-#    chart = SplineRadarChart(500, 500)
-#    chart = MapChart(440, 220)
-#    chart = GoogleOMeterChart(440, 220, x_range=(0, 100))
-    sine_data = [math.sin(float(a) / math.pi) * 100 for a in xrange(100)]
-    random_data = [random.random() * 100 for a in xrange(100)]
-    random_data2 = [random.random() * 50 for a in xrange(100)]
-#    chart.set_bar_width(50)
-#    chart.set_bar_spacing(0)
-    chart.add_data(sine_data)
-    chart.add_data(random_data)
-#    chart.set_zero_line(1, .5)
-#    chart.add_data(random_data2)
-#    chart.set_line_style(0, thickness=5)
-#    chart.set_line_style(1, thickness=2, line_segment=10, blank_segment=5)
-#    chart.set_title('heloooo weeee')
-#    chart.set_legend(('sine wave', 'random * x'))
-    chart.set_colours(('ee2000', 'DDDDAA', 'fF03f2'))
-#    chart.fill_solid(Chart.ALPHA, '123456')
-#    chart.fill_linear_gradient(Chart.ALPHA, 20, '004070', 1, '300040', 0,
-#        'aabbcc55', 0.5)
-#    chart.fill_linear_stripes(Chart.CHART, 20, '204070', .2, '300040', .2,
-#        'aabbcc00', 0.2)
-#    axis_left_index = chart.set_axis_range(Axis.LEFT, 0, 10)
-#    axis_right_index = chart.set_axis_range(Axis.RIGHT, 5, 30)
-#    axis_bottom_index = chart.set_axis_labels(Axis.BOTTOM, [1, 25, 95])
-#    chart.set_axis_positions(axis_bottom_index, [1, 25, 95])
-#    chart.set_axis_style(axis_bottom_index, '003050', 15)
+class ChartGrammar(object):
 
-#    chart.set_pie_labels(('apples', 'oranges', 'bananas'))
+    def __init__(self, grammar):
+        self.grammar = grammar
+        self.chart = self.create_chart_instance()
 
-#    chart.set_grid(10, 10)
-#    for a in xrange(0, 100, 10):
-#        chart.add_marker(1, a, 'a', 'AACA20', 10)
+    @staticmethod
+    def get_possible_chart_types():
+        possible_charts = []
+        for cls_name in globals():
+            if not cls_name.endswith('Chart'):
+                continue
+            cls = globals()[cls_name]
+            # Check if it is an abstract class
+            try:
+                cls(1, 1)
+            except AbstractClassException:
+                continue
+            # Strip off "Class"
+            possible_charts.append(cls_name[:-5])
+        return possible_charts
 
-#    chart.add_horizontal_range('00A020', .2, .5)
-#    chart.add_vertical_range('00c030', .2, .4)
+    def create_chart_instance(self):
+        assert('w' in grammar)  # width is required
+        assert('h' in grammar)  # height is required
+        assert('type' in grammar)  # type is required
+        types = ChartGrammar.get_possible_chart_types()
+        if grammar['type'] not in types:
+            raise UnknownChartType('%s is an unknown chart type. Possible '
+                'chart types are %s' % (grammar['type'], ','.join(types)))
 
-#    chart.add_fill_simple('303030A0')
+    def download(self):
+        pass
 
-#    chart.set_codes(['AU', 'AT', 'US'])
-#    chart.add_data([1,2,3])
-#    chart.set_colours(('EEEEEE', '000000', '00FF00'))
-
-#    chart.add_data([50,75])
-#    chart.set_pie_labels(('apples', 'oranges'))
-
-    url = chart.get_url()
-    print url
-
-    chart.download('test.png')
-
-    if 1:
-        data = urllib.urlopen(chart.get_url()).read()
-        open('meh.png', 'wb').write(data)
-        os.system('eog meh.png')
-
-
-if __name__ == '__main__':
-    test()
