@@ -3,7 +3,7 @@ PyGoogleChart - A complete Python wrapper for the Google Chart API
 
 http://pygooglechart.slowchop.com/
 
-Copyright 2007 Gerald Kaszuba
+Copyright 2007-2008 Gerald Kaszuba
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -82,19 +82,18 @@ class Data(object):
     @classmethod
     def float_scale_value(cls, value, range):
         lower, upper = range
+        assert(upper > lower)
         max_value = cls.max_value()
-        scaled = (value-lower) * (float(max_value)/(upper-lower))
+        scaled = (value-lower) * (float(max_value) / (upper - lower))
         return scaled
 
     @classmethod
     def clip_value(cls, value):
-        clipped = max(0, min(value, cls.max_value()))
-        return clipped
+        return max(0, min(value, cls.max_value()))
 
     @classmethod
     def int_scale_value(cls, value, range):
-        scaled = int(round(cls.float_scale_value(value, range)))
-        return scaled
+        return int(round(cls.float_scale_value(value, range)))
 
     @classmethod
     def scale_value(cls, value, range):
@@ -151,17 +150,6 @@ class TextData(Data):
 
     @classmethod
     def scale_value(cls, value, range):
-        lower, upper = range
-        if upper > lower:
-            max_value = cls.max_value()
-            scaled = (float(value) - lower) * max_value / upper
-            clipped = max(0, min(scaled, max_value))
-            return clipped
-        else:
-            return lower
-
-    @classmethod
-    def scale_value(cls, value, range):
         # use float values instead of integers because we don't need an encode
         # map index
         scaled = cls.float_scale_value(value, range)
@@ -170,6 +158,7 @@ class TextData(Data):
 
 
 class ExtendedData(Data):
+
     enc_map = \
         'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-.'
 
@@ -204,6 +193,7 @@ class ExtendedData(Data):
 
 
 class Axis(object):
+
     BOTTOM = 'x'
     TOP = 't'
     LEFT = 'y'
@@ -491,7 +481,7 @@ class Chart(object):
         try:
             lower = min([min(s) for type, s in self.annotated_data()
                          if type == 'y'])
-            upper = max([max(s) for type, s in self.annotated_data()
+            upper = max([max(s) + 1 for type, s in self.annotated_data()
                          if type == 'y'])
             return (lower, upper)
         except ValueError:
@@ -549,6 +539,7 @@ class Chart(object):
         if not issubclass(data_class, Data):
             raise UnknownDataTypeException()
         if self.auto_scale:
+            print data_class
             data = self.scaled_data(data_class, self.x_range, self.y_range)
         else:
             data = self.data
@@ -919,7 +910,7 @@ def test():
 #    chart.set_bar_spacing(0)
     chart.add_data(sine_data)
     chart.add_data(random_data)
-    chart.set_zero_line(1, .5)
+#    chart.set_zero_line(1, .5)
 #    chart.add_data(random_data2)
 #    chart.set_line_style(0, thickness=5)
 #    chart.set_line_style(1, thickness=2, line_segment=10, blank_segment=5)
