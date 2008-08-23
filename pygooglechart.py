@@ -498,14 +498,19 @@ class Chart(object):
         else:
             return ExtendedData
 
+    def _filter_none(self, data):
+        return [r for r in data if r is not None]
+
     def data_x_range(self):
         """Return a 2-tuple giving the minimum and maximum x-axis
         data range.
         """
         try:
-            lower = min([min(s) for type, s in self.annotated_data()
+            lower = min([min(self._filter_none(s))
+                         for type, s in self.annotated_data()
                          if type == 'x'])
-            upper = max([max(s) for type, s in self.annotated_data()
+            upper = max([max(self._filter_none(s))
+                         for type, s in self.annotated_data()
                          if type == 'x'])
             return (lower, upper)
         except ValueError:
@@ -516,9 +521,11 @@ class Chart(object):
         data range.
         """
         try:
-            lower = min([min(s) for type, s in self.annotated_data()
+            lower = min([min(self._filter_none(s))
+                         for type, s in self.annotated_data()
                          if type == 'y'])
-            upper = max([max(s) + 1 for type, s in self.annotated_data()
+            upper = max([max(self._filter_none(s)) + 1
+                         for type, s in self.annotated_data()
                          if type == 'y'])
             return (lower, upper)
         except ValueError:
@@ -562,8 +569,14 @@ class Chart(object):
                 scale_range = y_range
             elif type == 'marker-size':
                 scale_range = (0, max(dataset))
-            scaled_data.append([data_class.scale_value(v, scale_range)
-                                for v in dataset])
+            scaled_dataset = []
+            for v in dataset:
+                if v is None:
+                    scaled_dataset.append(None)
+                else:
+                    scaled_dataset.append(
+                        data_class.scale_value(v, scale_range))
+            scaled_data.append(scaled_dataset)
         return scaled_data
 
     def add_data(self, data):

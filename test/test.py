@@ -32,7 +32,7 @@ class TestBase(unittest.TestCase):
             warnings.simplefilter('ignore')
 
     def assertChartURL(self, url, query):
-        return url.endswith(query)
+        self.assertTrue(url.endswith(query))
 
 
 class TestDataTypes(TestBase):
@@ -98,7 +98,15 @@ class TestScaling(TestBase):
         self.assertRaises(UserWarning, sv, 30, [0, 1])
 
 
-class TestChartQR(TestBase):
+class TestLineChart(TestBase):
+
+    def test_none_data(self):
+        chart = gc.SimpleLineChart(300, 100)
+        chart.add_data([1, 2, 3, None, 5])
+        self.assertChartURL(chart.get_url(), \
+            '?cht=lc&chs=300x100&chd=e:KrVVgA__1V')
+
+class TestQRChart(TestBase):
 
     def assertQRImage(self, chart, text):
         try:
