@@ -21,6 +21,12 @@ class TestBase(unittest.TestCase):
         # All tests require warnings to be raised
         self.raise_warnings(True)
 
+        self.temp_image = 'temp.png'
+
+    def tearDown(self):
+        if os.exists(self.temp_image):
+            os.unlink(self.temp_image)
+
     def raise_warnings(self, rw):
         gc._reset_warnings()
 
@@ -115,9 +121,8 @@ class TestQRChart(TestBase):
             print 'PyQrCodec not installed. Can not test QR code image'
             return
 
-        fn = 'temp.png'
-        chart.download(fn)
-        status, string = PyQrcodec.decode(fn)
+        chart.download(self.temp_image)
+        status, string = PyQrcodec.decode(self.temp_image)
         self.assertTrue(status)
         self.assertEquals(text, string)
 
@@ -146,7 +151,7 @@ class TestQRChart(TestBase):
         self.assertQRImage(chart, text)
 
     def test_validate_utf8(self):
-        text = 'こんにちは世界'  # Hello world in Japanese UTF8
+        text = 'こんにちは世界'  # Hello world in Japanese UTF-8
         chart = gc.QRChart(100, 100)
         chart.add_data(text)
         chart.set_ec('H', 0)
@@ -162,7 +167,7 @@ class TestQRChart(TestBase):
         self.assertChartURL(chart.get_url(), \
             '?cht=qr&chs=100x100&chl=%82%B1%82%F1%82%C9' \
             '%82%BF%82%CD%90%A2%8AE&choe=Shift_JIS&chld=H|0')
-        chart.download('temp.png')
+        chart.download(self.temp_image)
 
 
 class TestGrammar(TestBase):
