@@ -1,12 +1,17 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 import unittest
 import sys
 import os
 import warnings
+import urllib
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.insert(0, ROOT)
 
 import pygooglechart as gc
+from pygooglechart import NoDataGivenException
 
 
 class TestBase(unittest.TestCase):
@@ -25,6 +30,9 @@ class TestBase(unittest.TestCase):
             # Don't print out warnings if we're expecting them--so we can have
             # nicer looking tests! :)
             warnings.simplefilter('ignore')
+
+    def assertChartURL(self, url, query):
+        return url.endswith(query)
 
 
 class TestDataTypes(TestBase):
@@ -90,11 +98,71 @@ class TestScaling(TestBase):
         self.assertRaises(UserWarning, sv, 30, [0, 1])
 
 
+class TestChartQR(TestBase):
+
+    def assertQRImage(self, chart, text):
+        try:
+            import PyQrcodec
+        except ImportError:
+            print 'PyQrCodec not installed. Can not test QR code image'
+            return
+
+        fn = 'temp.png'
+        chart.download(fn)
+        status, string = PyQrcodec.decode(fn)
+        self.assertTrue(status)
+        self.assertEquals(text, string)
+
+    def test_simple(self):
+        text = 'Hello World'
+        chart = gc.QRChart(100, 150)
+        chart.add_data(text)
+        self.assertChartURL(chart.get_url(), \
+            '?cht=qr&chs=100x150&chl=Hello%20World')
+
+    def test_encoding(self):
+        chart = gc.QRChart(100, 100)
+        chart.add_data('Hello World')
+        self.assertChartURL(chart.get_url(), \
+            '?cht=qr&chs=100x100&chl=Hello%20World')
+
+    def test_no_data(self):
+        chart = gc.QRChart(100, 100)
+        self.assertRaises(NoDataGivenException, chart.get_url)
+
+    def test_validate_image(self):
+        text = 'Hello World'
+        chart = gc.QRChart(100, 100)
+        chart.add_data(text)
+        chart.set_ec('H', 0)  # PyQrcodec seems to only work on higher EC
+        self.assertQRImage(chart, text)
+
+    def test_validate_utf8(self):
+        text = 'こんにちは世界'  # Hello world in Japanese UTF8
+        chart = gc.QRChart(100, 100)
+        chart.add_data(text)
+        chart.set_ec('H', 0)
+        self.assertQRImage(chart, text)
+
+    def test_validate_shift_jis(self):
+        # XXX: It looks like PyQrcodec doesn't do shift_jis?
+        text = unicode('こんにちは世界', 'utf-8').encode('shift_jis')
+        chart = gc.QRChart(100, 100)
+        chart.add_data(text)
+        chart.set_ec('H', 0)
+        chart.set_encoding('Shift_JIS')
+        self.assertChartURL(chart.get_url(), \
+            '?cht=qr&chs=100x100&chl=%82%B1%82%F1%82%C9' \
+            '%82%BF%82%CD%90%A2%8AE&choe=Shift_JIS&chld=H|0')
+        chart.download('temp.png')
+
+
 class TestGrammar(TestBase):
 
     types = ('Venn', 'GroupedHorizontalBar', 'GoogleOMeter', 'Scatter',
         'StackedVerticalBar', 'Map', 'StackedHorizontalBar', 'SimpleLine',
-        'SparkLine', 'GroupedVerticalBar', 'SplineRadar', 'XYLine', 'Radar')
+        'SparkLine', 'GroupedVerticalBar', 'SplineRadar', 'XYLine', 'Radar',
+        'QR')
 
     def test_chart_types(self):
         ret = gc.ChartGrammar.get_possible_chart_types()

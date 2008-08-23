@@ -326,8 +326,6 @@ class Chart(object):
         }
         self.axis = []
         self.markers = []
-        self.trendline_data = []
-        self.trendline_style = None
         self.line_styles = {}
         self.grid = None
 
@@ -361,10 +359,6 @@ class Chart(object):
         ret = self.axis_to_url()
         if ret:
             url_bits.append(ret)                    
-        if self.trendline_data: 
-            if not self.trendline_style: self.set_trendline_style()
-            url_bits.append('ewtr=0,%s,%.1f' % (self.trendline_colour, self.trendline_thickness))
-            url_bits.append(self.trendline_data_to_url(data_class=data_class))            
         if self.markers:
             url_bits.append(self.markers_to_url())        
         if self.line_styles:
@@ -954,6 +948,38 @@ class GoogleOMeterChart(PieChart):
 
     def type_to_url(self):
         return 'cht=gom'
+
+
+class QRChart(Chart):
+
+    def __init__(self, *args, **kwargs):
+        Chart.__init__(self, *args, **kwargs)
+        self.encoding = None
+        self.ec_level = None
+        self.margin = None
+
+    def type_to_url(self):
+        return 'cht=qr'
+
+    def data_to_url(self, data_class=None):
+        if not self.data:
+            raise NoDataGivenException()
+        return 'chl=%s' % urllib.quote(self.data[0])
+
+    def get_url_bits(self, data_class=None):
+        url_bits = Chart.get_url_bits(self, data_class=data_class)
+        if self.encoding:
+            url_bits.append('choe=%s' % self.encoding)
+        if self.ec_level:
+            url_bits.append('chld=%s|%s' % (self.ec_level, self.margin))
+        return url_bits
+
+    def set_encoding(self, encoding):
+        self.encoding = encoding
+
+    def set_ec(self, level, margin):
+        self.ec_level = level
+        self.margin = margin
 
 
 class ChartGrammar(object):
