@@ -112,6 +112,7 @@ class TestLineChart(TestBase):
         self.assertChartURL(chart.get_url(), \
             '?cht=lc&chs=300x100&chd=e:AAMzZm__zM')
 
+
 class TestQRChart(TestBase):
 
     def assertQRImage(self, chart, text):
