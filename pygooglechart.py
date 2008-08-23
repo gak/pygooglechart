@@ -47,8 +47,6 @@ def _check_colour(colour):
 def _reset_warnings():
     """Helper function to reset all warnings. Used by the unit tests."""
     globals()['__warningregistry__'] = None
-#def _warn(message):
-#    warnings.warn_explicit(msg, warnings.UserWarning,
 
 
 # Exception Classes
@@ -117,10 +115,14 @@ class Data(object):
     def scale_value(cls, value, range):
         scaled = cls.int_scale_value(value, range)
         clipped = cls.clip_value(scaled)
+        Data.check_clip(scaled, clipped)
+        return clipped
+
+    @staticmethod
+    def check_clip(scaled, clipped):
         if clipped != scaled:
             warnings.warn('One or more of of your data points has been '
                 'clipped because it is out of range.')
-        return clipped
 
 
 class SimpleData(Data):
@@ -168,6 +170,7 @@ class TextData(Data):
         # map index
         scaled = cls.float_scale_value(value, range)
         clipped = cls.clip_value(scaled)
+        Data.check_clip(scaled, clipped)
         return clipped
 
 
@@ -288,7 +291,8 @@ class Chart(object):
     LINEAR_STRIPES = 'ls'
 
     def __init__(self, width, height, title=None, legend=None, colours=None,
-            auto_scale=True, x_range=None, y_range=None):
+            auto_scale=True, x_range=None, y_range=None,
+            colours_within_series=None):
         if type(self) == Chart:
             raise AbstractClassException('This is an abstract class')
         assert(isinstance(width, int))
@@ -298,7 +302,9 @@ class Chart(object):
         self.data = []
         self.set_title(title)
         self.set_legend(legend)
+        self.set_legend_position(None)
         self.set_colours(colours)
+        self.set_colours_within_series(colours_within_series)
 
         # Data for scaling.
         self.auto_scale = auto_scale  # Whether to automatically scale data
@@ -320,6 +326,8 @@ class Chart(object):
         }
         self.axis = []
         self.markers = []
+        self.trendline_data = []
+        self.trendline_style = None
         self.line_styles = {}
         self.grid = None
 
@@ -341,16 +349,24 @@ class Chart(object):
             url_bits.append('chtt=%s' % self.title)
         if self.legend:
             url_bits.append('chdl=%s' % '|'.join(self.legend))
+        if self.legend_position:
+            url_bits.append('chdlp=%s' % (self.legend_position))
         if self.colours:
-            url_bits.append('chco=%s' % ','.join(self.colours))
+            url_bits.append('chco=%s' % ','.join(self.colours))            
+        if self.colours_within_series:
+            url_bits.append('chco=%s' % '|'.join(self.colours_within_series))
         ret = self.fill_to_url()
         if ret:
             url_bits.append(ret)
         ret = self.axis_to_url()
         if ret:
-            url_bits.append(ret)
+            url_bits.append(ret)                    
+        if self.trendline_data: 
+            if not self.trendline_style: self.set_trendline_style()
+            url_bits.append('ewtr=0,%s,%.1f' % (self.trendline_colour, self.trendline_thickness))
+            url_bits.append(self.trendline_data_to_url(data_class=data_class))            
         if self.markers:
-            url_bits.append(self.markers_to_url())
+            url_bits.append(self.markers_to_url())        
         if self.line_styles:
             style = []
             for index in xrange(max(self.line_styles) + 1):
@@ -394,6 +410,12 @@ class Chart(object):
         else:
             self.legend = None
 
+    def set_legend_position(self, legend_position):
+        if legend_position:
+            self.legend_position = urllib.quote(legend_position)
+        else:    
+            self.legend_position = None
+
     # Chart colours
     # -------------------------------------------------------------------------
 
@@ -406,6 +428,16 @@ class Chart(object):
             for col in colours:
                 _check_colour(col)
         self.colours = colours
+
+    def set_colours_within_series(self, colours):
+        # colours needs to be a list, tuple or None
+        assert(isinstance(colours, list) or isinstance(colours, tuple) or
+            colours is None)
+        # make sure the colours are in the right format
+        if colours:
+            for col in colours:
+                _check_colour(col)
+        self.colours_within_series = colours        
 
     # Background/Chart colours
     # -------------------------------------------------------------------------
@@ -626,7 +658,7 @@ class Chart(object):
     # Markers, Ranges and Fill area (chm)
     # -------------------------------------------------------------------------
 
-    def markers_to_url(self):
+    def markers_to_url(self):        
         return 'chm=%s' % '|'.join([','.join(a) for a in self.markers])
 
     def add_marker(self, index, point, marker_type, colour, size, priority=0):
@@ -634,10 +666,16 @@ class Chart(object):
             str(size), str(priority)))
 
     def add_horizontal_range(self, colour, start, stop):
-        self.markers.append(('r', colour, '1', str(start), str(stop)))
+        self.markers.append(('r', colour, '0', str(start), str(stop)))
+
+    def add_data_line(self, colour, data_set, size, priority=0):
+        self.markers.append(('D', colour, str(data_set), '0', str(size), str(priority)))
+
+    def add_marker_text(self, string, colour, data_set, data_point, size, priority=0):
+        self.markers.append((str(string), colour, str(data_set), str(data_point), str(size), str(priority)))        
 
     def add_vertical_range(self, colour, start, stop):
-        self.markers.append(('R', colour, '1', str(start), str(stop)))
+        self.markers.append(('R', colour, '0', str(start), str(stop)))
 
     def add_fill_range(self, colour, index_start, index_end):
         self.markers.append(('b', colour, str(index_start), str(index_end), \
@@ -941,7 +979,6 @@ class ChartGrammar(object):
 
     def parse_data(self, data):
         self.chart.data = data
-        print self.chart.data
 
     @staticmethod
     def get_possible_chart_types():

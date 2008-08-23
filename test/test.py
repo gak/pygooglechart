@@ -26,6 +26,7 @@ class TestBase(unittest.TestCase):
             # nicer looking tests! :)
             warnings.simplefilter('ignore')
 
+
 class TestDataTypes(TestBase):
 
     def test_simple_data(self):
@@ -71,9 +72,8 @@ class TestScaling(TestBase):
         self.assertEquals(sv(2222, [0, 10000]), 22.22)
 
         self.raise_warnings(True)
-        sv(-10, [0, 1])
-#        self.assertRaises(UserWarning, sv, -10, [0, 1])
-#        self.assertEquals(UserWarning, sv, 30, [0, 1])
+        self.assertRaises(UserWarning, sv, -10, [0, 1])
+        self.assertRaises(UserWarning, sv, 30, [0, 1])
 
     def test_ext_scale(self):
         sv = gc.ExtendedData.scale_value
@@ -88,6 +88,7 @@ class TestScaling(TestBase):
         self.raise_warnings(True)
         self.assertRaises(UserWarning, sv, -10, [0, 1])
         self.assertRaises(UserWarning, sv, 30, [0, 1])
+
 
 class TestGrammar(TestBase):
 
@@ -113,14 +114,10 @@ class TestGrammar(TestBase):
         }
         grammar = gc.ChartGrammar()
         chart = grammar.parse(g)
-        print chart.get_url()
+#        print chart.get_url()
 #        chart.download('meh.png')
 
 
 if __name__ == "__main__":
     unittest.main()
-
-    suite = unittest.TestSuite()
-    suite.addTest(TestScaling('test_ext_scale'))
-    unittest.TextTestRunner().run(suite)
 
