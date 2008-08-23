@@ -551,14 +551,14 @@ class Chart(object):
         if x_range is None:
             x_range = self.data_x_range()
             if x_range and x_range[0] > 0:
-                x_range = (0, x_range[1])
+                x_range = (x_range[0], x_range[1])
         self.scaled_x_range = x_range
 
         # Determine the y-axis range for scaling.
         if y_range is None:
             y_range = self.data_y_range()
             if y_range and y_range[0] > 0:
-                y_range = (0, y_range[1])
+                y_range = (y_range[0], y_range[1])
         self.scaled_y_range = y_range
 
         scaled_data = []

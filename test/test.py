@@ -104,7 +104,7 @@ class TestLineChart(TestBase):
         chart = gc.SimpleLineChart(300, 100)
         chart.add_data([1, 2, 3, None, 5])
         self.assertChartURL(chart.get_url(), \
-            '?cht=lc&chs=300x100&chd=e:KrVVgA__1V')
+            '?cht=lc&chs=300x100&chd=e:AAMzZm__zM')
 
 class TestQRChart(TestBase):
 
