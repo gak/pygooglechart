@@ -384,7 +384,7 @@ class Chart(object):
             raise BadContentTypeException('Server responded with a ' \
                 'content-type of %s' % opener.headers['content-type'])
 
-        open(file_name, 'wb').write(urllib.urlopen(self.get_url()).read())
+        open(file_name, 'wb').write(opener.read())
 
     # Simple settings
     # -------------------------------------------------------------------------
