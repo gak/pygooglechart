@@ -24,7 +24,7 @@ class TestBase(unittest.TestCase):
         self.temp_image = 'temp.png'
 
     def tearDown(self):
-        if os.exists(self.temp_image):
+        if os.path.exists(self.temp_image):
             os.unlink(self.temp_image)
 
     def raise_warnings(self, rw):
