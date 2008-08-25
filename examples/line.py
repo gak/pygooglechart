@@ -86,7 +86,7 @@ def fill():
     # Between the 3 data values
     chart.add_fill_range('224499', 1, 2)
     chart.add_fill_range('FF0000', 2, 3)
-    
+
     # from the last real data to the
     chart.add_fill_range('80C65A', 3, 4)
 
@@ -118,7 +118,7 @@ def stripes():
     # Set the vertical stripes
     chart.fill_linear_stripes(Chart.CHART, 0, 'CCCCCC', 0.2, 'FFFFFF', 0.2)
 
-    # Set the horizonal dotted lines
+    # Set the horizontal dotted lines
     chart.set_grid(0, 25, 5, 5)
 
     # The Y axis labels contains 0 to 100 skipping every 25, but remove the
