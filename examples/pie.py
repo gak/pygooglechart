@@ -13,9 +13,17 @@ import settings
 import helper
 
 def hello_world():
-    chart = PieChart3D(settings.width, settings.height)
-    chart.add_data([ord(a) for a in 'hW'])
+
+    # Create a chart object of 200x100 pixels
+    chart = PieChart3D(250, 100)
+
+    # Add some data
+    chart.add_data([20, 10])
+
+    # Assign the labels to the pie data
     chart.set_pie_labels(['Hello', 'World'])
+
+    # Download the chart
     chart.download('pie-hello-world.png')
 
 def house_explosions():
