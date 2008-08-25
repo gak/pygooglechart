@@ -603,7 +603,7 @@ class Chart(object):
 
     def set_axis_labels(self, axis_type, values):
         assert(axis_type in Axis.TYPES)
-        values = [urllib.quote(a) for a in values]
+        values = [urllib.quote(str(a)) for a in values]
         axis_index = len(self.axis)
         axis = LabelAxis(axis_index, axis_type, values)
         self.axis.append(axis)
@@ -893,6 +893,11 @@ class PieChart(Chart):
         # one dataset for pie charts.
         for dataset in self.data:
             yield ('x', dataset)
+
+    def scaled_data(self, data_class, x_range=None, y_range=None):
+        if not x_range:
+            x_range = [0, sum(self.data[0])]
+        return Chart.scaled_data(self, data_class, x_range, self.y_range)
 
 
 class PieChart2D(PieChart):
