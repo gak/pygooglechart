@@ -162,7 +162,7 @@ class TextData(Data):
                 else:
                     raise DataOutOfRangeException()
             encoded_data.append(','.join(sub_data))
-        return 'chd=t:' + '|'.join(encoded_data)
+        return 'chd=t:' + '%7c'.join(encoded_data)
 
     @classmethod
     def scale_value(cls, value, range):
@@ -257,7 +257,7 @@ class LabelAxis(Axis):
         self.values = [str(a) for a in values]
 
     def __repr__(self):
-        return '%i:|%s' % (self.axis_index, '|'.join(self.values))
+        return '%i:%%7c%s' % (self.axis_index, '%7c'.join(self.values))
 
 
 class RangeAxis(Axis):
@@ -301,6 +301,7 @@ class Chart(object):
         self.height = height
         self.data = []
         self.set_title(title)
+        self.set_title_style(None, None)
         self.set_legend(legend)
         self.set_legend_position(None)
         self.set_colours(colours)
@@ -345,14 +346,17 @@ class Chart(object):
         # optional arguments
         if self.title:
             url_bits.append('chtt=%s' % self.title)
+        if self.title_colour and self.title_font_size:
+            url_bits.append('chts=%s,%s' % (self.title_colour, \
+                self.title_font_size))
         if self.legend:
-            url_bits.append('chdl=%s' % '|'.join(self.legend))
+            url_bits.append('chdl=%s' % '%7c'.join(self.legend))
         if self.legend_position:
             url_bits.append('chdlp=%s' % (self.legend_position))
         if self.colours:
             url_bits.append('chco=%s' % ','.join(self.colours))            
         if self.colours_within_series:
-            url_bits.append('chco=%s' % '|'.join(self.colours_within_series))
+            url_bits.append('chco=%s' % '%7c'.join(self.colours_within_series))
         ret = self.fill_to_url()
         if ret:
             url_bits.append(ret)
@@ -369,7 +373,7 @@ class Chart(object):
                 else:
                     values = ('1', )
                 style.append(','.join(values))
-            url_bits.append('chls=%s' % '|'.join(style))
+            url_bits.append('chls=%s' % '%7c'.join(style))
         if self.grid:
             url_bits.append('chg=%s' % self.grid)
         return url_bits
@@ -394,6 +398,12 @@ class Chart(object):
             self.title = urllib.quote(title)
         else:
             self.title = None
+
+    def set_title_style(self, colour, font_size):
+        if not colour is None:
+            _check_colour(colour)
+        self.title_colour = colour
+        self.title_font_size = font_size
 
     def set_legend(self, legend):
         """legend needs to be a list, tuple or None"""
@@ -474,7 +484,7 @@ class Chart(object):
                 areas.append('%s,%s,%s' % (area, self.fill_types[area], \
                     self.fill_area[area]))
         if areas:
-            return 'chf=' + '|'.join(areas)
+            return 'chf=' + '%7c'.join(areas)
 
     # Data
     # -------------------------------------------------------------------------
@@ -653,20 +663,20 @@ class Chart(object):
         url_bits = []
         url_bits.append('chxt=%s' % ','.join(available_axis))
         if label_axis:
-            url_bits.append('chxl=%s' % '|'.join(label_axis))
+            url_bits.append('chxl=%s' % '%7c'.join(label_axis))
         if range_axis:
-            url_bits.append('chxr=%s' % '|'.join(range_axis))
+            url_bits.append('chxr=%s' % '%7c'.join(range_axis))
         if positions:
-            url_bits.append('chxp=%s' % '|'.join(positions))
+            url_bits.append('chxp=%s' % '%7c'.join(positions))
         if styles:
-            url_bits.append('chxs=%s' % '|'.join(styles))
+            url_bits.append('chxs=%s' % '%7c'.join(styles))
         return '&'.join(url_bits)
 
     # Markers, Ranges and Fill area (chm)
     # -------------------------------------------------------------------------
 
     def markers_to_url(self):        
-        return 'chm=%s' % '|'.join([','.join(a) for a in self.markers])
+        return 'chm=%s' % '%7c'.join([','.join(a) for a in self.markers])
 
     def add_marker(self, index, point, marker_type, colour, size, priority=0):
         self.markers.append((marker_type, colour, str(index), str(point), \
@@ -676,10 +686,13 @@ class Chart(object):
         self.markers.append(('r', colour, '0', str(start), str(stop)))
 
     def add_data_line(self, colour, data_set, size, priority=0):
-        self.markers.append(('D', colour, str(data_set), '0', str(size), str(priority)))
+        self.markers.append(('D', colour, str(data_set), '0', str(size), \
+            str(priority)))
 
-    def add_marker_text(self, string, colour, data_set, data_point, size, priority=0):
-        self.markers.append((str(string), colour, str(data_set), str(data_point), str(size), str(priority)))        
+    def add_marker_text(self, string, colour, data_set, data_point, size, \
+            priority=0):
+        self.markers.append((str(string), colour, str(data_set), \
+            str(data_point), str(size), str(priority)))        
 
     def add_vertical_range(self, colour, start, stop):
         self.markers.append(('R', colour, '0', str(start), str(stop)))
@@ -885,7 +898,7 @@ class PieChart(Chart):
     def get_url_bits(self, data_class=None):
         url_bits = Chart.get_url_bits(self, data_class=data_class)
         if self.pie_labels:
-            url_bits.append('chl=%s' % '|'.join(self.pie_labels))
+            url_bits.append('chl=%s' % '%7c'.join(self.pie_labels))
         return url_bits
 
     def annotated_data(self):
@@ -989,7 +1002,7 @@ class QRChart(Chart):
         if self.encoding:
             url_bits.append('choe=%s' % self.encoding)
         if self.ec_level:
-            url_bits.append('chld=%s|%s' % (self.ec_level, self.margin))
+            url_bits.append('chld=%s%%7c%s' % (self.ec_level, self.margin))
         return url_bits
 
     def set_encoding(self, encoding):
@@ -1005,6 +1018,7 @@ class ChartGrammar(object):
     def __init__(self):
         self.grammar = None
         self.chart = None
+        warnings.warn('This code is incomplete!')
 
     def parse(self, grammar):
         self.grammar = grammar

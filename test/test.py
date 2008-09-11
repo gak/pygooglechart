@@ -158,19 +158,6 @@ class TestQRChart(TestBase):
         chart.set_ec('H', 0)
         self.assertQRImage(chart, text)
 
-    def test_validate_shift_jis(self):
-        # XXX: It looks like PyQrcodec doesn't do shift_jis?
-        text = unicode('こんにちは世界', 'utf-8').encode('shift_jis')
-        chart = gc.QRChart(100, 100)
-        chart.add_data(text)
-        chart.set_ec('H', 0)
-        chart.set_encoding('Shift_JIS')
-        self.assertChartURL(chart.get_url(), \
-            '?cht=qr&chs=100x100&chl=%82%B1%82%F1%82%C9' \
-            '%82%BF%82%CD%90%A2%8AE&choe=Shift_JIS&chld=H|0')
-        chart.download(self.temp_image)
-
-
 class TestGrammar(TestBase):
 
     types = ('Venn', 'GroupedHorizontalBar', 'GoogleOMeter', 'Scatter',
