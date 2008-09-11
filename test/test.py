@@ -11,7 +11,6 @@ ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.insert(0, ROOT)
 
 import pygooglechart as gc
-from pygooglechart import NoDataGivenException
 
 
 class TestBase(unittest.TestCase):
@@ -142,7 +141,7 @@ class TestQRChart(TestBase):
 
     def test_no_data(self):
         chart = gc.QRChart(100, 100)
-        self.assertRaises(NoDataGivenException, chart.get_url)
+        self.assertRaises(gc.NoDataGivenException, chart.get_url)
 
     def test_validate_image(self):
         text = 'Hello World'

@@ -19,6 +19,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """
+from __future__ import division
 
 import os
 import urllib
@@ -100,7 +101,7 @@ class Data(object):
     def float_scale_value(cls, value, range):
         lower, upper = range
         assert(upper > lower)
-        scaled = (value - lower) * (float(cls.max_value) / (upper - lower))
+        scaled = (value - lower) * (cls.max_value / (upper - lower))
         return scaled
 
     @classmethod
@@ -1018,7 +1019,6 @@ class ChartGrammar(object):
     def __init__(self):
         self.grammar = None
         self.chart = None
-        warnings.warn('This code is incomplete!')
 
     def parse(self, grammar):
         self.grammar = grammar
