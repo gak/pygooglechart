@@ -32,7 +32,7 @@ import copy
 # Helper variables and functions
 # -----------------------------------------------------------------------------
 
-__version__ = '0.2.1'
+__version__ = '0.2.2'
 __author__ = 'Gerald Kaszuba'
 
 reo_colour = re.compile('^([A-Fa-f0-9]{2,2}){3,4}$')
