@@ -85,6 +85,8 @@ class AbstractClassException(PyGoogleChartException):
 class UnknownChartType(PyGoogleChartException):
     pass
 
+class UnknownCountryCodeException(PyGoogleChartException):
+    pass
 
 # Data Classes
 # -----------------------------------------------------------------------------
@@ -954,12 +956,70 @@ class MapChart(Chart):
         Chart.__init__(self, *args, **kwargs)
         self.geo_area = 'world'
         self.codes = []
-
+        self.__areas = ('africa', 'asia', 'europe', 'middle_east', 'south_america', 'usa', 'world')
+        self.__ccodes = ('AD', 'AE', 'AF', 'AG', 'AI', 'AL', 'AM', 'AN', 'AO', 'AQ', 'AR',
+                         'AS', 'AT', 'AU', 'AW', 'AX', 'AZ', 'BA', 'BB', 'BD', 'BE', 'BF',
+                         'BG', 'BH', 'BI', 'BJ', 'BL', 'BM', 'BN', 'BO', 'BR', 'BS', 'BT',
+                         'BV', 'BW', 'BY', 'BZ', 'CA', 'CC', 'CD', 'CF', 'CG', 'CH', 'CI',
+                         'CK', 'CL', 'CM', 'CN', 'CO', 'CR', 'CU', 'CV', 'CX', 'CY', 'CZ',
+                         'DE', 'DJ', 'DK', 'DM', 'DO', 'DZ', 'EC', 'EE', 'EG', 'EH', 'ER',
+                         'ES', 'ET', 'FI', 'FJ', 'FK', 'FM', 'FO', 'FR', 'GA', 'GB', 'GD',
+                         'GE', 'GF', 'GG', 'GH', 'GI', 'GL', 'GM', 'GN', 'GP', 'GQ', 'GR',
+                         'GS', 'GT', 'GU', 'GW', 'GY', 'HK', 'HM', 'HN', 'HR', 'HT', 'HU',
+                         'ID', 'IE', 'IL', 'IM', 'IN', 'IO', 'IQ', 'IR', 'IS', 'IT', 'JE',
+                         'JM', 'JO', 'JP', 'KE', 'KG', 'KH', 'KI', 'KM', 'KN', 'KP', 'KR',
+                         'KW', 'KY', 'KZ', 'LA', 'LB', 'LC', 'LI', 'LK', 'LR', 'LS', 'LT',
+                         'LU', 'LV', 'LY', 'MA', 'MC', 'MD', 'ME', 'MF', 'MG', 'MH', 'MK',
+                         'ML', 'MM', 'MN', 'MO', 'MP', 'MQ', 'MR', 'MS', 'MT', 'MU', 'MV',
+                         'MW', 'MX', 'MY', 'MZ', 'NA', 'NC', 'NE', 'NF', 'NG', 'NI', 'NL',
+                         'NO', 'NP', 'NR', 'NU', 'NZ', 'OM', 'PA', 'PE', 'PF', 'PG', 'PH',
+                         'PK', 'PL', 'PM', 'PN', 'PR', 'PS', 'PT', 'PW', 'PY', 'QA', 'RE',
+                         'RO', 'RS', 'RU', 'RW', 'SA', 'SB', 'SC', 'SD', 'SE', 'SG', 'SH',
+                         'SI', 'SJ', 'SK', 'SL', 'SM', 'SN', 'SO', 'SR', 'ST', 'SV', 'SY',
+                         'SZ', 'TC', 'TD', 'TF', 'TG', 'TH', 'TJ', 'TK', 'TL', 'TM', 'TN',
+                         'TO', 'TR', 'TT', 'TV', 'TW', 'TZ', 'UA', 'UG', 'UM', 'US', 'UY',
+                         'UZ', 'VA', 'VC', 'VE', 'VG', 'VI', 'VN', 'VU', 'WF', 'WS', 'YE',
+                         'YT', 'ZA', 'ZM', 'ZW')
+        
     def type_to_url(self):
         return 'cht=t'
 
     def set_codes(self, codes):
-        self.codes = codes
+        '''Set the country code map for the data.
+        Codes given in a list.
+
+        i.e. DE - Germany
+             AT - Austria
+             US - United States
+        '''
+
+        codemap = ''
+        
+        for cc in codes:
+            cc = cc.upper()
+            if cc in self.__ccodes:
+                codemap += cc
+            else:
+                raise UnknownCountryCodeException(cc)
+            
+        self.codes = codemap
+
+    def set_geo_area(self, area):
+        '''Sets the geo area for the map.
+
+        * africa
+        * asia
+        * europe
+        * middle_east
+        * south_america
+        * usa
+        * world
+        '''
+        
+        if area in self.__areas:
+            self.geo_area = area
+        else:
+            raise UnknownChartType('Unknown chart type for maps: %s' %area)
 
     def get_url_bits(self, data_class=None):
         url_bits = Chart.get_url_bits(self, data_class=data_class)
@@ -967,6 +1027,15 @@ class MapChart(Chart):
         if self.codes:
             url_bits.append('chld=%s' % ''.join(self.codes))
         return url_bits
+
+    def add_data_dict(self, datadict):
+        '''Sets the data and country codes via a dictionary.
+
+        i.e. {'DE': 50, 'GB': 30, 'AT': 70}
+        '''
+
+        self.set_codes(datadict.keys())
+        self.add_data(datadict.values())
 
 
 class GoogleOMeterChart(PieChart):
