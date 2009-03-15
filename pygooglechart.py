@@ -332,6 +332,8 @@ class Chart(object):
         self.markers = []
         self.line_styles = {}
         self.grid = None
+        self.title_colour = None
+        self.title_font_size = None
 
     # URL generation
     # -------------------------------------------------------------------------
@@ -402,11 +404,13 @@ class Chart(object):
         else:
             self.title = None
 
-    def set_title_style(self, colour, font_size):
+    def set_title_style(self, colour=None, font_size=None):
         if not colour is None:
             _check_colour(colour)
-        self.title_colour = colour
-        self.title_font_size = font_size
+        if not colour and not font_size:
+            return
+        self.title_colour = colour or '333333'
+        self.title_font_size = font_size or 13.5
 
     def set_legend(self, legend):
         """legend needs to be a list, tuple or None"""
