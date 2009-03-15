@@ -10,34 +10,8 @@ import urllib
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.insert(0, ROOT)
 
+from test.test_base import TestBase
 import pygooglechart as gc
-
-
-class TestBase(unittest.TestCase):
-
-    def setUp(self):
-
-        # All tests require warnings to be raised
-        self.raise_warnings(True)
-
-        self.temp_image = 'temp.png'
-
-    def tearDown(self):
-        if os.path.exists(self.temp_image):
-            os.unlink(self.temp_image)
-
-    def raise_warnings(self, rw):
-        gc._reset_warnings()
-
-        if rw:
-            warnings.simplefilter('error')
-        else:
-            # Don't print out warnings if we're expecting them--so we can have
-            # nicer looking tests! :)
-            warnings.simplefilter('ignore')
-
-    def assertChartURL(self, url, query):
-        self.assertTrue(url.endswith(query))
 
 
 class TestDataTypes(TestBase):
@@ -103,11 +77,37 @@ class TestScaling(TestBase):
         self.assertRaises(UserWarning, sv, 30, [0, 1])
 
 
+class TestTitleStyle(TestBase):
+
+    def test_title_style(self):
+
+        chart = gc.SimpleLineChart(300, 100)
+        chart.set_title_style()
+        self.assertEquals(chart.title_colour, None)
+        self.assertEquals(chart.title_font_size, None)
+
+        chart = gc.SimpleLineChart(300, 100)
+        chart.set_title_style(font_size=30)
+        self.assertEquals(chart.title_colour, '333333')
+        self.assertEquals(chart.title_font_size, 30)
+
+        chart = gc.SimpleLineChart(300, 100)
+        chart.set_title_style(colour='123456')
+        self.assertEquals(chart.title_colour, '123456')
+        self.assertEquals(chart.title_font_size, 13.5)
+
+        chart = gc.SimpleLineChart(300, 100)
+        chart.set_title_style(font_size=100, colour='123456')
+        self.assertEquals(chart.title_colour, '123456')
+        self.assertEquals(chart.title_font_size, 100)
+
+
 class TestLineChart(TestBase):
 
     def test_none_data(self):
         chart = gc.SimpleLineChart(300, 100)
         chart.add_data([1, 2, 3, None, 5])
+        print chart.get_url()
         self.assertChartURL(chart.get_url(), \
             '?cht=lc&chs=300x100&chd=e:AAMzZm__zM')
 
