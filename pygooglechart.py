@@ -458,7 +458,7 @@ class Chart(object):
         assert(angle >= 0 and angle <= 90)
         assert(len(args) % 2 == 0)
         args = list(args)  # args is probably a tuple and we need to mutate
-        for a in xrange(len(args) / 2):
+        for a in xrange(int(len(args) / 2)):
             col = args[a * 2]
             offset = args[a * 2 + 1]
             _check_colour(col)
