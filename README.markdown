@@ -25,7 +25,7 @@ Example
     # Download the chart
     chart.download('pie-hello-world.png')
 
-There are more examples in https://github.com/gak/pygooglechart/tree/master/examples
+There are more examples in [the examples directory](https://github.com/gak/pygooglechart/tree/master/examples).
 
 Installation
 ------------
