@@ -284,7 +284,7 @@ class Chart(object):
     of the chart. legend requires a list that corresponds to datasets.
     """
 
-    BASE_URL = 'http://chart.apis.google.com/chart?'
+    BASE_URL = 'http://chart.apis.google.com/chart'
     BACKGROUND = 'bg'
     CHART = 'c'
     ALPHA = 'a'
@@ -336,11 +336,15 @@ class Chart(object):
         self.title_font_size = None
 
     # URL generation
+        
+        return self.BASE_URL + '?' + self.get_url_extension(data_class)
+    
+    def get_url_extension(self, data_class = None):
     # -------------------------------------------------------------------------
 
     def get_url(self, data_class=None):
         url_bits = self.get_url_bits(data_class=data_class)
-        return self.BASE_URL + '&'.join(url_bits)
+        return '&'.join(url_bits)
 
     def get_url_bits(self, data_class=None):
         url_bits = []
@@ -386,8 +390,11 @@ class Chart(object):
     # Downloading
     # -------------------------------------------------------------------------
 
-    def download(self, file_name):
-        opener = urllib2.urlopen(self.get_url())
+    def download(self, file_name, use_post = False):
+        if use_post:
+            opener = urllib2.urlopen(self.BASE_URL, self.get_url_extension())
+        else:
+            opener = urllib2.urlopen(self.get_url())
 
         if opener.headers['content-type'] != 'image/png':
             raise BadContentTypeException('Server responded with a ' \
