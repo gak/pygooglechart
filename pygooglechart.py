@@ -336,13 +336,12 @@ class Chart(object):
         self.title_font_size = None
 
     # URL generation
+    # -------------------------------------------------------------------------
         
+    def get_url(self, data_class=None):
         return self.BASE_URL + '?' + self.get_url_extension(data_class)
     
-    def get_url_extension(self, data_class = None):
-    # -------------------------------------------------------------------------
-
-    def get_url(self, data_class=None):
+    def get_url_extension(self, data_class=None):
         url_bits = self.get_url_bits(data_class=data_class)
         return '&'.join(url_bits)
 
@@ -390,7 +389,7 @@ class Chart(object):
     # Downloading
     # -------------------------------------------------------------------------
 
-    def download(self, file_name, use_post = False):
+    def download(self, file_name, use_post=True):
         if use_post:
             opener = urllib2.urlopen(self.BASE_URL, self.get_url_extension())
         else:
