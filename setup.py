@@ -1,5 +1,5 @@
 from distutils.core import setup
-from setuptools import setup
+#from setuptools import setup
 from pygooglechart import __version__
 
 setup(name='pygooglechart',

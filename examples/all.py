@@ -25,6 +25,6 @@ for example in examples:
     if example in notexamples:
         continue
     module = example[:-3]
-    print module
+    print(module)
     __import__(module).main()
 

@@ -5,7 +5,7 @@ import unittest
 import sys
 import os
 import warnings
-import urllib
+import urllib.request, urllib.parse, urllib.error
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.insert(0, ROOT)
@@ -17,7 +17,7 @@ import pygooglechart as gc
 class TestDataTypes(TestBase):
 
     def test_simple_data(self):
-        s = gc.SimpleData([range(0, 62), [0, 1, 60, 61]])
+        s = gc.SimpleData([list(range(0, 62)), [0, 1, 60, 61]])
         self.assertEquals(repr(s),
             'chd=s:ABCDEFGHIJKLMNOPQRSTUVWXYZ'
             'abcdefghijklmnopqrstuvwxyz0123456789,AB89')
@@ -107,7 +107,7 @@ class TestLineChart(TestBase):
     def test_none_data(self):
         chart = gc.SimpleLineChart(300, 100)
         chart.add_data([1, 2, 3, None, 5])
-        print chart.get_url()
+        print(chart.get_url())
         self.assertChartURL(chart.get_url(), \
             '?cht=lc&chs=300x100&chd=e:AAMzZm__zM')
 
@@ -118,7 +118,7 @@ class TestQRChart(TestBase):
         try:
             import PyQrcodec
         except ImportError:
-            print 'PyQrCodec not installed. Can not test QR code image'
+            print('PyQrCodec not installed. Can not test QR code image')
             return
 
         chart.download(self.temp_image)

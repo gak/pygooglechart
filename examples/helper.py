@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import random
 
 def random_data(points=50, maximum=100):
-    return [random.random() * maximum for a in xrange(points)]
+    return [random.random() * maximum for a in range(points)]
 
 def random_colour(min=20, max=200):
     func = lambda: int(random.random() * (max-min) + min)

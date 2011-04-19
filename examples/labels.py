@@ -36,10 +36,10 @@ def cat_proximity():
     chart.set_legend(['INTELLIGENCE', 'INSANITY OF STATEMENTS'])
 
     # intelligence
-    data_index = chart.add_data([100. / y for y in xrange(1, 15)])
+    data_index = chart.add_data([100. / y for y in range(1, 15)])
 
     # insanity of statements
-    chart.add_data([100. - 100 / y for y in xrange(1, 15)])
+    chart.add_data([100. - 100 / y for y in range(1, 15)])
 
     # line colours
     chart.set_colours(['208020', '202080'])
@@ -57,7 +57,7 @@ def cat_proximity():
 def many_labels():
     chart = SimpleLineChart(settings.width, settings.height)
 
-    for a in xrange(3):
+    for a in range(3):
         for axis_type in (Axis.LEFT, Axis.RIGHT, Axis.BOTTOM):
             index = chart.set_axis_range(axis_type, 0, random.random() * 100)
             chart.set_axis_style(index, colour=helper.random_colour(), \

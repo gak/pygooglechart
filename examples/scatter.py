@@ -53,13 +53,13 @@ def scatter_circle():
     ymid = 50
     xlist = []
     ylist = []
-    for angle in xrange(0, steps + 1):
+    for angle in range(0, steps + 1):
         angle = float(angle) / steps * math.pi * 2
         xlist.append(math.cos(angle) * xradius + xmid)
         ylist.append(math.sin(angle) * yradius + ymid)
     chart.add_data(xlist)
     chart.add_data(ylist)
-    chart.add_data(range(len(ylist)))
+    chart.add_data(list(range(len(ylist))))
     chart.add_marker(0, 1.0, 'o', '00ff00', 10)
     chart.download('scatter-circle.png')
 

@@ -19,11 +19,11 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-from __future__ import division
+
 
 import os
-import urllib
-import urllib2
+import urllib.request, urllib.parse, urllib.error
+import urllib.request, urllib.error, urllib.parse
 import math
 import random
 import re
@@ -375,7 +375,7 @@ class Chart(object):
             url_bits.append(self.markers_to_url())        
         if self.line_styles:
             style = []
-            for index in xrange(max(self.line_styles) + 1):
+            for index in range(max(self.line_styles) + 1):
                 if index in self.line_styles:
                     values = self.line_styles[index]
                 else:
@@ -391,9 +391,9 @@ class Chart(object):
 
     def download(self, file_name, use_post=True):
         if use_post:
-            opener = urllib2.urlopen(self.BASE_URL, self.get_url_extension())
+            opener = urllib.request.urlopen(self.BASE_URL, self.get_url_extension())
         else:
-            opener = urllib2.urlopen(self.get_url())
+            opener = urllib.request.urlopen(self.get_url())
 
         if opener.headers['content-type'] != 'image/png':
             raise BadContentTypeException('Server responded with a ' \
@@ -406,7 +406,7 @@ class Chart(object):
 
     def set_title(self, title):
         if title:
-            self.title = urllib.quote(title)
+            self.title = urllib.parse.quote(title)
         else:
             self.title = None
 
@@ -423,13 +423,13 @@ class Chart(object):
         assert(isinstance(legend, list) or isinstance(legend, tuple) or
             legend is None)
         if legend:
-            self.legend = [urllib.quote(a) for a in legend]
+            self.legend = [urllib.parse.quote(a) for a in legend]
         else:
             self.legend = None
 
     def set_legend_position(self, legend_position):
         if legend_position:
-            self.legend_position = urllib.quote(legend_position)
+            self.legend_position = urllib.parse.quote(legend_position)
         else:    
             self.legend_position = None
 
@@ -470,7 +470,7 @@ class Chart(object):
         assert(angle >= 0 and angle <= 90)
         assert(len(args) % 2 == 0)
         args = list(args)  # args is probably a tuple and we need to mutate
-        for a in xrange(int(len(args) / 2)):
+        for a in range(int(len(args) / 2)):
             col = args[a * 2]
             offset = args[a * 2 + 1]
             _check_colour(col)
@@ -626,7 +626,7 @@ class Chart(object):
 
     def set_axis_labels(self, axis_type, values):
         assert(axis_type in Axis.TYPES)
-        values = [urllib.quote(str(a)) for a in values]
+        values = [urllib.parse.quote(str(a)) for a in values]
         axis_index = len(self.axis)
         axis = LabelAxis(axis_index, axis_type, values)
         self.axis.append(axis)
@@ -812,7 +812,7 @@ class BarChart(Chart):
             url_bits.append('chbh=%i' % self.bar_width)
         zero_line = []
         if self.zero_lines:
-            for index in xrange(max(self.zero_lines) + 1):
+            for index in range(max(self.zero_lines) + 1):
                 if index in self.zero_lines:
                     zero_line.append(str(self.zero_lines[index]))
                 else:
@@ -906,7 +906,7 @@ class PieChart(Chart):
                 (self.__class__.__name__))
 
     def set_pie_labels(self, labels):
-        self.pie_labels = [urllib.quote(a) for a in labels]
+        self.pie_labels = [urllib.parse.quote(a) for a in labels]
 
     def get_url_bits(self, data_class=None):
         url_bits = Chart.get_url_bits(self, data_class=data_class)
@@ -1046,8 +1046,8 @@ class MapChart(Chart):
         i.e. {'DE': 50, 'GB': 30, 'AT': 70}
         '''
 
-        self.set_codes(datadict.keys())
-        self.add_data(datadict.values())
+        self.set_codes(list(datadict.keys()))
+        self.add_data(list(datadict.values()))
 
 
 class GoogleOMeterChart(PieChart):
@@ -1077,7 +1077,7 @@ class QRChart(Chart):
     def data_to_url(self, data_class=None):
         if not self.data:
             raise NoDataGivenException()
-        return 'chl=%s' % urllib.quote(self.data[0])
+        return 'chl=%s' % urllib.parse.quote(self.data[0])
 
     def get_url_bits(self, data_class=None):
         url_bits = Chart.get_url_bits(self, data_class=data_class)
@@ -1122,7 +1122,7 @@ class ChartGrammar(object):
     @staticmethod
     def get_possible_chart_types():
         possible_charts = []
-        for cls_name in globals().keys():
+        for cls_name in list(globals().keys()):
             if not cls_name.endswith('Chart'):
                 continue
             cls = globals()[cls_name]

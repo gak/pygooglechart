@@ -61,7 +61,7 @@ def xy_circle():
     ymid = 50
     xlist = []
     ylist = []
-    for angle in xrange(0, steps + 1):
+    for angle in range(0, steps + 1):
         angle = float(angle) / steps * math.pi * 2
         xlist.append(math.cos(angle) * xradius + xmid)
         ylist.append(math.sin(angle) * yradius + ymid)
@@ -140,7 +140,7 @@ def stripes():
     # The Y axis labels contains 0 to 100 skipping every 25, but remove the
     # first number because it's obvious and gets in the way of the first X
     # label.
-    left_axis = range(0, max_y + 1, 25)
+    left_axis = list(range(0, max_y + 1, 25))
     left_axis[0] = ''
     chart.set_axis_labels(Axis.LEFT, left_axis)
 
