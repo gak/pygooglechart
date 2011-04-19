@@ -1,3 +1,5 @@
+#! /usr/bin/env python
+
 """
 pygooglechart - A complete Python wrapper for the Google Chart API
 
@@ -22,13 +24,22 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
 import os
-import urllib.request, urllib.parse, urllib.error
-import urllib.request, urllib.error, urllib.parse
 import math
 import random
 import re
 import warnings
 import copy
+
+try:
+    # we're on Python3
+    from urllib.request import urlopen
+    from urllib.parse import quote
+
+except ImportError:
+    # we're on Python2.x
+    from urllib2 import urlopen
+    from urllib import quote
+
 
 # Helper variables and functions
 # -----------------------------------------------------------------------------
@@ -391,9 +402,9 @@ class Chart(object):
 
     def download(self, file_name, use_post=True):
         if use_post:
-            opener = urllib.request.urlopen(self.BASE_URL, self.get_url_extension())
+            opener = urlopen(self.BASE_URL, self.get_url_extension())
         else:
-            opener = urllib.request.urlopen(self.get_url())
+            opener = urlopen(self.get_url())
 
         if opener.headers['content-type'] != 'image/png':
             raise BadContentTypeException('Server responded with a ' \
@@ -406,7 +417,7 @@ class Chart(object):
 
     def set_title(self, title):
         if title:
-            self.title = urllib.parse.quote(title)
+            self.title = quote(title)
         else:
             self.title = None
 
@@ -423,13 +434,13 @@ class Chart(object):
         assert(isinstance(legend, list) or isinstance(legend, tuple) or
             legend is None)
         if legend:
-            self.legend = [urllib.parse.quote(a) for a in legend]
+            self.legend = [quote(a) for a in legend]
         else:
             self.legend = None
 
     def set_legend_position(self, legend_position):
         if legend_position:
-            self.legend_position = urllib.parse.quote(legend_position)
+            self.legend_position = quote(legend_position)
         else:    
             self.legend_position = None
 
@@ -626,7 +637,7 @@ class Chart(object):
 
     def set_axis_labels(self, axis_type, values):
         assert(axis_type in Axis.TYPES)
-        values = [urllib.parse.quote(str(a)) for a in values]
+        values = [quote(str(a)) for a in values]
         axis_index = len(self.axis)
         axis = LabelAxis(axis_index, axis_type, values)
         self.axis.append(axis)
@@ -906,7 +917,7 @@ class PieChart(Chart):
                 (self.__class__.__name__))
 
     def set_pie_labels(self, labels):
-        self.pie_labels = [urllib.parse.quote(a) for a in labels]
+        self.pie_labels = [quote(a) for a in labels]
 
     def get_url_bits(self, data_class=None):
         url_bits = Chart.get_url_bits(self, data_class=data_class)
@@ -1077,7 +1088,7 @@ class QRChart(Chart):
     def data_to_url(self, data_class=None):
         if not self.data:
             raise NoDataGivenException()
-        return 'chl=%s' % urllib.parse.quote(self.data[0])
+        return 'chl=%s' % quote(self.data[0])
 
     def get_url_bits(self, data_class=None):
         url_bits = Chart.get_url_bits(self, data_class=data_class)

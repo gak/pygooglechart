@@ -35,7 +35,7 @@ def birth_rate():
     # Load the data from a file, create a dict that looks like:
     # {'AU': 5, 'YE': 10}
     data = {}
-    countries = open('mapchart-birth-rate.txt', 'rb').read().split('\n')
+    countries = open('mapchart-birth-rate.txt', 'r').read().split('\n')
     for line in countries[:-1]:
         code, score = line.split(' ', 1)
         data[code] = float(score)
