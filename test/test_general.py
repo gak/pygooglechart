@@ -47,7 +47,7 @@ class TestScaling(TestBase):
         # XXX behavior seems sufficient either way but it should be checked
         # XXX more thoroughly
         try:
-            self.assertEquals(sv(.5, [0, 1]), 30)
+            self.assertIn(sv(.5, [0, 1]), 30)
         except AttributeError:
             self.assertEquals(sv(.5, [0, 1]), 31)
 
