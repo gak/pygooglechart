@@ -46,7 +46,11 @@ class TestScaling(TestBase):
         # XXX this will change depending on whether we're in 2.x or 3.x; the
         # XXX behavior seems sufficient either way but it should be checked
         # XXX more thoroughly
-        self.assertIn(sv(.5, [0, 1]), (30,31))
+        try:
+            self.assertIn(sv(.5, [0, 1]), 30)
+        except AttributeError:
+            self.assertEquals(sv(.5, [0, 1]), 31)
+
         self.assertEquals(sv(30, [0, 1]), 61)
         self.assertEquals(sv(2222, [0, 10000]), 14)
 

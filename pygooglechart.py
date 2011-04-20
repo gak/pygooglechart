@@ -22,6 +22,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """
 
+# unnecessary on Python3, but harmless
+from __future__ import division
 
 import os
 import math
