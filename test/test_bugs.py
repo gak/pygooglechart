@@ -5,7 +5,11 @@ import unittest
 import sys
 import os
 import warnings
-import urllib.request, urllib.parse, urllib.error
+
+try:
+	import urllib.request, urllib.parse, urllib.error
+except ImportError:
+	import urllib2
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.insert(0, ROOT)
