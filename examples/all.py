@@ -16,6 +16,10 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
+# Change path so this module runs in any case
+import os
+os.chdir(os.path.dirname(__file__))
+
 from glob import glob
 
 examples = glob('*.py')
