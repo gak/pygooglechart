@@ -402,7 +402,7 @@ class Chart(object):
     # Downloading
     # -------------------------------------------------------------------------
 
-    def download(self, file_name, use_post=True):
+    def download(self, file_name=False, use_post=True):
         if use_post:
             opener = urlopen(self.BASE_URL, self.get_url_extension())
         else:
@@ -411,8 +411,10 @@ class Chart(object):
         if opener.headers['content-type'] != 'image/png':
             raise BadContentTypeException('Server responded with a ' \
                 'content-type of %s' % opener.headers['content-type'])
-
-        open(file_name, 'wb').write(opener.read())
+        if file_name:
+            open(file_name, 'wb').write(opener.read())
+        else:
+            return opener.read()
 
     # Simple settings
     # -------------------------------------------------------------------------
