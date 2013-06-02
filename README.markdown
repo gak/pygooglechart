@@ -9,9 +9,8 @@ pygooglechart works with Linux, Windows and Mac OS X.
 
 Unfortunatelly Google has deprecated this API:
 
-    The Image Charts portion of Google Chart Tools has been officially
-    deprecated as of April 20, 2012. After April 20, 2015, this Deprecation
-    Policy will not apply. 
+    The Image Charts portion of Google Chart Tools has been officially deprecated as of April 20, 2012.
+    After April 20, 2015, this Deprecation Policy will not apply. 
 
 Example
 -------
