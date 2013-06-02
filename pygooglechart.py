@@ -44,7 +44,7 @@ except ImportError:
 # Helper variables and functions
 # -----------------------------------------------------------------------------
 
-__version__ = '0.3.0'
+__version__ = '0.4.0'
 __author__ = 'Gerald Kaszuba'
 
 reo_colour = re.compile('^([A-Fa-f0-9]{2,2}){3,4}$')
