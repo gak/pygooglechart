@@ -402,7 +402,7 @@ class Chart(object):
 
     def download(self, file_name=False, use_post=True):
         if use_post:
-            opener = urlopen(self.BASE_URL, self.get_url_extension())
+            opener = urlopen(self.BASE_URL, self.get_url_extension().encode('utf-8'))
         else:
             opener = urlopen(self.get_url())
 
