@@ -22,17 +22,17 @@ class TestDataTypes(TestBase):
 
     def test_simple_data(self):
         s = gc.SimpleData([list(range(0, 62)), [0, 1, 60, 61]])
-        self.assertEquals(repr(s),
+        self.assertEqual(repr(s),
             'chd=s:ABCDEFGHIJKLMNOPQRSTUVWXYZ'
             'abcdefghijklmnopqrstuvwxyz0123456789,AB89')
 
     def test_text_data(self):
         s = gc.TextData([[0, 1, 99.9]])
-        self.assertEquals(repr(s), 'chd=t:0.0,1.0,99.9')
+        self.assertEqual(repr(s), 'chd=t:0.0,1.0,99.9')
 
     def test_ext_data(self):
         s = gc.ExtendedData([[0, 1, 4095]])
-        self.assertEquals(repr(s), 'chd=e:AAAB..')
+        self.assertEqual(repr(s), 'chd=e:AAAB..')
 
 
 class TestScaling(TestBase):
@@ -41,8 +41,8 @@ class TestScaling(TestBase):
         sv = gc.SimpleData.scale_value
 
         self.raise_warnings(False)  # We know some of these give warnings
-        self.assertEquals(sv(-10, [0, 1]), 0)
-        self.assertEquals(sv(0, [0, 1]), 0)
+        self.assertEqual(sv(-10, [0, 1]), 0)
+        self.assertEqual(sv(0, [0, 1]), 0)
         # XXX this will change depending on whether we're in 2.x or 3.x; the
         # XXX behavior seems sufficient either way but it should be checked
         # XXX more thoroughly
@@ -50,10 +50,10 @@ class TestScaling(TestBase):
             expected = 30
         else:
             expected = 31
-        self.assertEquals(sv(.5, [0, 1]), expected)
+        self.assertEqual(sv(.5, [0, 1]), expected)
 
-        self.assertEquals(sv(30, [0, 1]), 61)
-        self.assertEquals(sv(2222, [0, 10000]), 14)
+        self.assertEqual(sv(30, [0, 1]), 61)
+        self.assertEqual(sv(2222, [0, 10000]), 14)
 
         # Test for warnings
         self.raise_warnings(True)
@@ -64,11 +64,11 @@ class TestScaling(TestBase):
         sv = gc.TextData.scale_value
 
         self.raise_warnings(False)
-        self.assertEquals(sv(-10, [0, 1]), 0)
-        self.assertEquals(sv(0, [0, 1]), 0)
-        self.assertEquals(sv(.5, [0, 1]), 50)
-        self.assertEquals(sv(30, [0, 1]), 100)
-        self.assertEquals(sv(2222, [0, 10000]), 22.22)
+        self.assertEqual(sv(-10, [0, 1]), 0)
+        self.assertEqual(sv(0, [0, 1]), 0)
+        self.assertEqual(sv(.5, [0, 1]), 50)
+        self.assertEqual(sv(30, [0, 1]), 100)
+        self.assertEqual(sv(2222, [0, 10000]), 22.22)
 
         self.raise_warnings(True)
         self.assertRaises(UserWarning, sv, -10, [0, 1])
@@ -78,11 +78,11 @@ class TestScaling(TestBase):
         sv = gc.ExtendedData.scale_value
 
         self.raise_warnings(False)
-        self.assertEquals(sv(-10, [0, 1]), 0)
-        self.assertEquals(sv(0, [0, 1]), 0)
-        self.assertEquals(sv(.5, [0, 1]), 2048)
-        self.assertEquals(sv(30, [0, 1]), 4095)
-        self.assertEquals(sv(2222, [0, 10000]), 910)
+        self.assertEqual(sv(-10, [0, 1]), 0)
+        self.assertEqual(sv(0, [0, 1]), 0)
+        self.assertEqual(sv(.5, [0, 1]), 2048)
+        self.assertEqual(sv(30, [0, 1]), 4095)
+        self.assertEqual(sv(2222, [0, 10000]), 910)
 
         self.raise_warnings(True)
         self.assertRaises(UserWarning, sv, -10, [0, 1])
@@ -95,23 +95,23 @@ class TestTitleStyle(TestBase):
 
         chart = gc.SimpleLineChart(300, 100)
         chart.set_title_style()
-        self.assertEquals(chart.title_colour, None)
-        self.assertEquals(chart.title_font_size, None)
+        self.assertEqual(chart.title_colour, None)
+        self.assertEqual(chart.title_font_size, None)
 
         chart = gc.SimpleLineChart(300, 100)
         chart.set_title_style(font_size=30)
-        self.assertEquals(chart.title_colour, '333333')
-        self.assertEquals(chart.title_font_size, 30)
+        self.assertEqual(chart.title_colour, '333333')
+        self.assertEqual(chart.title_font_size, 30)
 
         chart = gc.SimpleLineChart(300, 100)
         chart.set_title_style(colour='123456')
-        self.assertEquals(chart.title_colour, '123456')
-        self.assertEquals(chart.title_font_size, 13.5)
+        self.assertEqual(chart.title_colour, '123456')
+        self.assertEqual(chart.title_font_size, 13.5)
 
         chart = gc.SimpleLineChart(300, 100)
         chart.set_title_style(font_size=100, colour='123456')
-        self.assertEquals(chart.title_colour, '123456')
-        self.assertEquals(chart.title_font_size, 100)
+        self.assertEqual(chart.title_colour, '123456')
+        self.assertEqual(chart.title_font_size, 100)
 
 
 class TestLineChart(TestBase):
@@ -136,7 +136,7 @@ class TestQRChart(TestBase):
         chart.download(self.temp_image)
         status, string = PyQrcodec.decode(self.temp_image)
         self.assertTrue(status)
-        self.assertEquals(text, string)
+        self.assertEqual(text, string)
 
     def test_simple(self):
         text = 'Hello World'
@@ -179,7 +179,7 @@ class TestGrammar(TestBase):
     def test_chart_types(self):
         ret = gc.ChartGrammar.get_possible_chart_types()
         diff = set(ret).symmetric_difference(set(TestGrammar.types))
-        self.assert_(not diff)
+        self.assertTrue(not diff)
 
     def test_google_chart(self):
         g = {
