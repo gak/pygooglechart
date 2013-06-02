@@ -5,6 +5,12 @@ pygooglechart is a complete Python wrapper for the Google Chart API.
 
 pygooglechart works with Linux, Windows and Mac OS X.
 
+## Deprecation Warning
+
+Unfortunatelly Google has deprecated this API:
+
+    The Image Charts portion of Google Chart Tools has been officially deprecated as of April 20, 2012. After April 20, 2015, this Deprecation Policy will not apply. 
+
 Example
 -------
 
@@ -38,5 +44,4 @@ If you have setuptools installed, simply run the following:
 Or get the sources and run:
 
     python setup.py install
-
 
