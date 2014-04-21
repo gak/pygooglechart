@@ -11,8 +11,8 @@ setup(name='pygooglechart',
     description='A complete Python wrapper for the Google Chart API',
     author='Gerald Kaszuba',
     author_email='gerald@geraldkaszuba.com',
-    url='http://pygooglechart.slowchop.com/',
-    download_url='http://pygooglechart.slowchop.com/files/download/' \
+    url='https://github.com/gak/pygooglechart',
+    download_url='http://slowchop.com/pygooglechart/download/' \
         'pygooglechart-%s.tar.gz' % __version__,
     classifiers=[
         'Development Status :: 4 - Beta',
