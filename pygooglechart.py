@@ -373,7 +373,7 @@ class Chart(object):
         if self.legend_position:
             url_bits.append('chdlp=%s' % (self.legend_position))
         if self.colours:
-            url_bits.append('chco=%s' % '|'.join(self.colours))            
+            url_bits.append('chco=%s' % ','.join(self.colours))
         if self.colours_within_series:
             url_bits.append('chco=%s' % '%7c'.join(self.colours_within_series))
         ret = self.fill_to_url()
