@@ -2,7 +2,7 @@
 """
 pygooglechart - A complete Python wrapper for the Google Chart API
 
-http://pygooglechart.slowchop.com/
+https://github.com/gak/pygooglechart
 
 Copyright 2007-2018 Gerald Kaszuba
 
