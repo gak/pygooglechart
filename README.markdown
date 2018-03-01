@@ -1,16 +1,18 @@
+[![No Maintenance Intended](http://unmaintained.tech/badge.svg)](http://unmaintained.tech/)
+
+Project Abandoned
+-----------------
+
+Many apologies. I've stopped maintaining this project due to personal time constraints. `Blog post <https://geraldkaszuba.com/retiring-projects/>`_ with more information.
+
+I'm happy to forward users to any new forks, or to discuss PyPI ownership.
+
 Python Google Chart
 ===================
 
 pygooglechart is a complete Python wrapper for the Google Chart API.
 
 pygooglechart works with Linux, Windows and Mac OS X.
-
-## Deprecation Warning
-
-Unfortunatelly Google has deprecated this API:
-
-    The Image Charts portion of Google Chart Tools has been officially deprecated as of April 20, 2012.
-    After April 20, 2015, this Deprecation Policy will not apply. 
 
 Example
 -------
