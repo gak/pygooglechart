@@ -2,9 +2,9 @@
 """
 pygooglechart - A complete Python wrapper for the Google Chart API
 
-http://pygooglechart.slowchop.com/
+https://github.com/gak/pygooglechart
 
-Copyright 2007-2013 Gerald Kaszuba
+Copyright 2007-2018 Gerald Kaszuba
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -44,7 +44,7 @@ except ImportError:
 # Helper variables and functions
 # -----------------------------------------------------------------------------
 
-__version__ = '0.4.0'
+__version__ = '0.4.1'
 __author__ = 'Gerald Kaszuba'
 
 reo_colour = re.compile('^([A-Fa-f0-9]{2,2}){3,4}$')

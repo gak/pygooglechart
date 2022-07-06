@@ -1,5 +1,9 @@
 # ChangeLog
 
+## 0.4.1 2018-02-23
+ * fix base Google API url (Graham Ullrich)
+ * Use correct color delimiter (Dorian Kind)
+
 ## 0.4.0 2013-06-02
  * Python 3 compatibility (Geremy Condra)
  * Fix chco separator (Iacopo Spalletti)
